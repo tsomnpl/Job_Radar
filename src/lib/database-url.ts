@@ -39,7 +39,7 @@ function pickPreferredUrl(urls: string[]): string {
 /** Vercel/Prisma sometimes stores `["postgres://..."]` instead of a raw URL. */
 export function unwrapDatabaseUrl(raw: string | undefined | null): string {
   if (!raw) return "";
-  let value = stripWrappingQuotes(raw.trim());
+  const value = stripWrappingQuotes(raw.trim());
   if (!value) return "";
 
   if (value.startsWith("[")) {

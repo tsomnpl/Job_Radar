@@ -22,7 +22,7 @@ export function ApplyButton({ jobId, initialStatus }: { jobId: string; initialSt
       router.refresh();
       return;
     }
-    if (response.status === 401) window.location.href = "/sign-in";
+    if (response.status === 401) router.push("/sign-in");
   }
 
   const applied = status === "applied" || status === "interviewing" || status === "offer";

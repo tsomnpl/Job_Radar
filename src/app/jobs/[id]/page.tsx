@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Pill, ScoreRing } from "@/components/brand";
 import { ApplyButton } from "@/components/apply-button";
@@ -70,9 +71,9 @@ export default async function JobDetailPage({
           {user || !isClerkConfigured() ? (
             <ApplyButton jobId={job.id} initialStatus={savedRow?.status ?? null} />
           ) : (
-            <a href="/sign-in" className="btn-primary rounded-full px-4 py-2 text-sm font-semibold">
+            <Link href="/sign-in" className="btn-primary rounded-full px-4 py-2 text-sm font-semibold">
               Connexion pour postuler
-            </a>
+            </Link>
           )}
           {job.sourceUrl && !job.sourceUrl.startsWith("ai:") ? (
             <a
