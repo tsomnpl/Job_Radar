@@ -97,6 +97,7 @@ export type JobRecord = {
   source: string;
   language: string;
   postedAt: Date;
+  active?: boolean;
 };
 
 export type RankedJob = JobRecord & {

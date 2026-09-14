@@ -17,7 +17,7 @@ export default async function JobsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-semibold">Offres actives</h1>
-        <p className="mt-2 text-[#b9d4d4]">Classées par score de matching contre votre profil (ou la requête ouverte).</p>
+        <p className="mt-2 text-muted">Classées par score de matching contre votre profil (ou la requête ouverte).</p>
       </div>
       <div className="grid gap-4">
         {ranked.map((job) => (

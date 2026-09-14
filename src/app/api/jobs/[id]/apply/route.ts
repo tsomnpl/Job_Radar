@@ -11,21 +11,19 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     if (!isPersistedUser(user) || !(await jobExistsInDb(id))) {
       return NextResponse.json({ error: "DATABASE_UNAVAILABLE" }, { status: 503 });
     }
-
-    const existing = await prisma.savedJob.findUnique({
+    const body = (await request.json().catch(() => null)) as { status?: string } | null;
+    const status = body?.status === "watching" ? "watching" : "applied";
+    const saved = await prisma.savedJob.upsert({
       where: { userId_jobId: { userId: user.id, jobId: id } },
+      update: { status },
+      create: { userId: user.id, jobId: id, status },
     });
-    if (existing) {
-      await prisma.savedJob.delete({ where: { id: existing.id } });
-      return NextResponse.json({ saved: false, status: null });
-    }
-    await prisma.savedJob.create({ data: { userId: user.id, jobId: id, status: "watching" } });
-    return NextResponse.json({ saved: true, status: "watching" });
+    return NextResponse.json({ saved: true, status: saved.status });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHENTICATED") {
       return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
     }
-    logDbError("api.save", error);
+    logDbError("api.apply", error);
     return NextResponse.json({ error: "DATABASE_UNAVAILABLE" }, { status: 503 });
   }
 }

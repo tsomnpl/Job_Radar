@@ -112,6 +112,7 @@ export function catalogJobRecords(): JobRecord[] {
     source: job.source,
     language: job.language,
     postedAt: job.postedAt,
+    active: true,
   }));
 }
 

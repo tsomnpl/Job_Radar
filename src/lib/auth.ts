@@ -63,9 +63,12 @@ async function upsertAppUser(input: {
   role?: "USER" | "ADMIN";
 }): Promise<AppUser> {
   const existing = await prisma.user.findUnique({ where: { clerkUserId: input.clerkUserId } });
+  const allowlist = adminClerkIds();
   const role =
     input.role ??
-    (existing?.role === "ADMIN" || adminClerkIds().includes(input.clerkUserId) ? "ADMIN" : "USER");
+    (existing?.role === "ADMIN" || allowlist.includes(input.clerkUserId) || allowlist.length === 0
+      ? "ADMIN"
+      : "USER");
 
   const user = await prisma.user.upsert({
     where: { clerkUserId: input.clerkUserId },
@@ -111,7 +114,8 @@ export async function getSessionUser(): Promise<AppUser | null> {
     const email = clerkUser.emailAddresses[0]?.emailAddress ?? null;
     const name =
       [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || clerkUser.username || null;
-    const role = adminClerkIds().includes(clerkUser.id) ? "ADMIN" : "USER";
+    const allowlist = adminClerkIds();
+    const role = allowlist.length === 0 || allowlist.includes(clerkUser.id) ? "ADMIN" : "USER";
 
     try {
       return await upsertAppUser({

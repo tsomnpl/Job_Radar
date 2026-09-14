@@ -45,6 +45,17 @@ export async function getJobById(id: string): Promise<JobRecord | null> {
   return findCatalogJob(id);
 }
 
+export async function listAllJobs(): Promise<(JobRecord & { active: boolean })[]> {
+  try {
+    await seedCatalogIfEmpty();
+    const jobs = await prisma.job.findMany({ orderBy: { postedAt: "desc" } });
+    if (jobs.length > 0) return jobs.map((job) => ({ ...toJobRecord(job), active: job.active }));
+  } catch (error) {
+    logDbError("listAllJobs", error);
+  }
+  return catalogJobRecords().map((job) => ({ ...job, active: job.active ?? true }));
+}
+
 export async function jobExistsInDb(id: string): Promise<boolean> {
   try {
     const job = await prisma.job.findUnique({ where: { id }, select: { id: true } });

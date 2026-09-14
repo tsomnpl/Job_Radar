@@ -1,5 +1,6 @@
 import { Pill } from "@/components/brand";
 import { CvForm } from "@/components/cv-form";
+import { CvOptimizeButton } from "@/components/cv-optimize-button";
 import { getSessionUser, isPersistedUser } from "@/lib/auth";
 import { withDb } from "@/lib/db";
 import { asJsonArray } from "@/lib/normalize";
@@ -21,21 +22,23 @@ export default async function CvPage() {
     <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
       <section className="space-y-4">
         <h1 className="text-3xl font-semibold">CV & profil</h1>
-        <p className="mt-2 text-[#b9d4d4]">
-          Collez le texte de votre CV. JobRadar en extrait un profil structuré (RodiumAI si configuré, sinon parseur
-          déterministe).
+        <p className="mt-2 text-muted">
+          Importez le texte de votre CV. JobRadar en extrait un profil structuré (RodiumAI si configuré, sinon
+          parseur déterministe) pour alimenter le radar.
         </p>
         {!user || !isPersistedUser(user) ? (
-          <p className="text-sm text-[#f5c14a]">
+          <p className="text-sm text-warn">
             Sans Postgres, le parsing fonctionne mais le profil ne sera pas enregistré.
           </p>
         ) : null}
         <CvForm initialText={profile?.cvText ?? ""} />
+        <CvOptimizeButton cvText={profile?.cvText ?? ""} />
       </section>
       <aside className="panel h-fit space-y-3 p-6">
         <h2 className="font-semibold">Profil actuel</h2>
         <p className="text-sm">{profile?.headline ?? "—"}</p>
-        <p className="text-xs text-[#8eacb0]">{profile?.seniority ?? "séniorité inconnue"}</p>
+        <p className="text-xs text-muted">{profile?.seniority ?? "séniorité inconnue"}</p>
+        <p className="text-xs text-muted">{asJsonArray(profile?.locationsJson).join(" · ") || "lieux à préciser"}</p>
         <div className="flex flex-wrap gap-2">
           {asJsonArray(profile?.skillsJson).map((skill) => (
             <Pill key={skill}>{skill}</Pill>
