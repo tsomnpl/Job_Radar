@@ -12,6 +12,7 @@ Langues : Français, Anglais
 Recherche un poste remote.
 `);
     expect(parsed.skills).toEqual(expect.arrayContaining(["python", "sql", "excel", "powerbi"]));
+    expect(parsed.skills).not.toContain("r");
     expect(parsed.languages).toEqual(expect.arrayContaining(["fr", "en"]));
     expect(parsed.yearsExperience).toBe(2);
     expect(parsed.locations.some((place) => place.includes("cotonou") || place.includes("benin"))).toBe(true);

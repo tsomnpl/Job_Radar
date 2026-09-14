@@ -105,8 +105,11 @@ function inferSeniority(years: number | null, text: string): Seniority | null {
 }
 
 function textHasSkill(folded: string, skill: string): boolean {
+  const escaped = skill.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const boundary = new RegExp(`(?:^|[^a-z0-9+])${escaped}(?:[^a-z0-9+]|$)`);
+  if (skill.length <= 3) return boundary.test(folded);
   const compact = folded.replace(/\s+/g, "");
-  return folded.includes(skill) || compact.includes(skill.replace(/\s+/g, ""));
+  return boundary.test(folded) || compact.includes(skill.replace(/\s+/g, ""));
 }
 
 function extractHeadline(text: string): string | null {
