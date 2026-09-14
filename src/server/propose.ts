@@ -38,10 +38,24 @@ Règles :
 - Ne invente pas d'URL. La description commence par "Piste IA JobRadar :" et explique pourquoi ça matche la requête.
 - Reste dans la géographie et le contrat de la requête.`;
 
+function heuristicTitle(intent: SearchIntent, index: number): string {
+  const kind =
+    intent.contractType === "internship"
+      ? "Stage"
+      : intent.contractType === "freelance"
+        ? "Mission"
+        : intent.contractType === "cdi"
+          ? "Poste"
+          : "Opportunité";
+  const topic = intent.skills[0] || intent.keywords[0] || "ciblée";
+  const loc = intent.location ? ` — ${intent.location}` : "";
+  const base = `${kind} ${topic}${loc}`;
+  return index === 0 ? base : `${base} (${index + 1})`;
+}
+
 function heuristicProposals(intent: SearchIntent): JobInput[] {
   const location = intent.location || "Remote";
   const skills = intent.skills.length ? intent.skills : intent.keywords;
-  const title = intent.query.slice(0, 80) || "Opportunité ciblée";
   const contract = intent.contractType ?? "cdi";
   const seniority = intent.seniority ?? "mid";
   const bases = [
@@ -49,20 +63,23 @@ function heuristicProposals(intent: SearchIntent): JobInput[] {
     { company: "ONG / agence pays (IA)", extra: "ONG, UNICEF, PNUD ou équivalent" },
     { company: "Mission consulting (IA)", extra: "mission freelance ou cabinet" },
   ];
-  return bases.map((base, index) => ({
-    title: index === 0 ? title : `${title} — piste ${index + 1}`,
-    company: base.company,
-    location,
-    country: intent.country,
-    remoteType: intent.remoteType ?? "hybrid",
-    contractType: contract,
-    seniority,
-    skills,
-    languages: intent.language ? [intent.language] : ["fr"],
-    description: `Piste IA JobRadar : aucune offre du stock ne couvrait assez « ${intent.query} ». Piste ${base.extra} à ${location}. Compétences visées : ${skills.join(", ") || "à préciser"}. À valider et sourcer (pas une annonce officielle scrapée).`,
-    source: "ai-proposal",
-    sourceUrl: `ai://proposal/${index}/${fingerprintJob({ title: `${title}-${index}`, company: base.company, location })}`,
-  }));
+  return bases.map((base, index) => {
+    const title = heuristicTitle(intent, index);
+    return {
+      title,
+      company: base.company,
+      location,
+      country: intent.country,
+      remoteType: intent.remoteType ?? "hybrid",
+      contractType: contract,
+      seniority,
+      skills,
+      languages: intent.language ? [intent.language] : ["fr"],
+      description: `Piste IA JobRadar : aucune offre du stock ne couvrait assez « ${intent.query} ». Piste ${base.extra} à ${location}. Compétences visées : ${skills.join(", ") || "à préciser"}. À valider et sourcer (pas une annonce officielle scrapée).`,
+      source: "ai-proposal",
+      sourceUrl: `ai://proposal/${index}/${fingerprintJob({ title: `${title}-${index}`, company: base.company, location })}`,
+    };
+  });
 }
 
 function parseProposedJobs(json: unknown, intent: SearchIntent): JobInput[] {
