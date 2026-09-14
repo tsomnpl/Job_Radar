@@ -1,0 +1,130 @@
+import {
+  CONTRACT_TYPES,
+  REMOTE_TYPES,
+  SENIORITY_LEVELS,
+  type ContractType,
+  type RemoteType,
+  type Seniority,
+} from "./types";
+
+const SKILL_ALIASES: Record<string, string> = {
+  js: "javascript",
+  node: "nodejs",
+  nodejs: "nodejs",
+  "node.js": "nodejs",
+  ts: "typescript",
+  reactjs: "react",
+  next: "nextjs",
+  "next.js": "nextjs",
+  nextjs: "nextjs",
+  py: "python",
+  postgres: "postgresql",
+  psql: "postgresql",
+  pg: "postgresql",
+  gh: "github",
+  "ci/cd": "cicd",
+  "ci-cd": "cicd",
+  ml: "machine learning",
+  "power bi": "powerbi",
+  excel: "excel",
+  sql: "sql",
+  "data analysis": "data",
+  "data analyst": "data",
+  analyse: "data",
+  analytics: "data",
+};
+
+export function fold(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+export function tokenize(value: string): string[] {
+  return fold(value)
+    .split(/[^a-z0-9+#]+/g)
+    .filter((token) => token.length > 1);
+}
+
+export function unique(values: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const value of values) {
+    const key = fold(value);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    result.push(value.trim());
+  }
+  return result;
+}
+
+export function normalizeSkill(value: string): string {
+  const folded = fold(value).replace(/\s+/g, " ");
+  return SKILL_ALIASES[folded] ?? folded;
+}
+
+export function parseSkillList(value: string[] | string | null | undefined): string[] {
+  const raw = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? value.split(/[,;|/]/g)
+      : [];
+  return unique(raw.map((item) => normalizeSkill(item)).filter(Boolean));
+}
+
+export function parseRemoteType(value: string | null | undefined): RemoteType | null {
+  if (!value) return null;
+  const folded = fold(value);
+  if (/(remote|teletravail|full.?remote|a distance)/.test(folded)) return "remote";
+  if (/(hybrid|hybride|flex)/.test(folded)) return "hybrid";
+  if (/(onsite|on-site|presentiel|sur site|bureau)/.test(folded)) return "onsite";
+  return (REMOTE_TYPES as readonly string[]).includes(folded) ? (folded as RemoteType) : null;
+}
+
+export function parseContractType(value: string | null | undefined): ContractType | null {
+  if (!value) return null;
+  const folded = fold(value);
+  if (/\bcdi\b/.test(folded)) return "cdi";
+  if (/\bcdd\b/.test(folded)) return "cdd";
+  if (/(freelance|independant|contract)/.test(folded)) return "freelance";
+  if (/(stage|intern)/.test(folded)) return "internship";
+  if (/(alternance|apprentissage|apprentice)/.test(folded)) return "apprenticeship";
+  return (CONTRACT_TYPES as readonly string[]).includes(folded)
+    ? (folded as ContractType)
+    : null;
+}
+
+export function parseSeniority(value: string | null | undefined): Seniority | null {
+  if (!value) return null;
+  const folded = fold(value);
+  if (/(stage|intern|alternant)/.test(folded)) return "intern";
+  if (/(junior|debutant|entry)/.test(folded)) return "junior";
+  if (/(lead|head|principal|staff|directeur)/.test(folded)) return "lead";
+  if (/(senior|confirme|experient)/.test(folded)) return "senior";
+  if (/(mid|confirme|intermediate)/.test(folded)) return "mid";
+  return (SENIORITY_LEVELS as readonly string[]).includes(folded)
+    ? (folded as Seniority)
+    : null;
+}
+
+export function fingerprintJob(input: {
+  title: string;
+  company: string;
+  location: string;
+  sourceUrl?: string | null;
+}): string {
+  if (input.sourceUrl?.trim()) return fold(input.sourceUrl);
+  return [input.title, input.company, input.location].map(fold).join("|");
+}
+
+export function asJsonArray(value: string | null | undefined): string[] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
+}

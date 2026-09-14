@@ -1,0 +1,3 @@
+title,company,location,country,remoteType,contractType,seniority,salaryMin,salaryMax,currency,skills,languages,description,source
+Data Engineer,Volta Lake Data,Accra,GH,hybrid,cdi,mid,2000,3200,USD,"python,sql,aws,data",en,Pipelines batch/stream,csv
+Stage Product,Open Sahel,Dakar,SN,remote,internship,intern,80000,110000,XOF,"product,figma",fr,Découverte produit et user interviews,csv

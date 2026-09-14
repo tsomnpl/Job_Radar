@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String     @id @default(cuid())
+  clerkUserId String     @unique
+  email       String?
+  name        String?
+  role        String     @default("USER")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  profile     Profile?
+  searches    Search[]
+  matches     Match[]
+  savedJobs   SavedJob[]
+}
+
+model Profile {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  headline          String?
+  summary           String?
+  cvText            String?
+  skillsJson        String    @default("[]")
+  languagesJson     String    @default("[]")
+  locationsJson     String    @default("[]")
+  seniority         String?
+  yearsExperience   Int?
+  remotePreference  String?
+  parsedAt          DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model Job {
+  id            String     @id @default(cuid())
+  title         String
+  company       String
+  location      String
+  country       String?
+  remoteType    String     @default("hybrid")
+  contractType  String     @default("cdi")
+  seniority     String     @default("mid")
+  salaryMin     Int?
+  salaryMax     Int?
+  currency      String     @default("XOF")
+  skillsJson    String     @default("[]")
+  languagesJson String     @default("[]")
+  description   String
+  sourceUrl     String?
+  source        String     @default("manual")
+  language      String     @default("fr")
+  postedAt      DateTime   @default(now())
+  importedAt    DateTime   @default(now())
+  fingerprint   String     @unique
+  active        Boolean    @default(true)
+  matches       Match[]
+  savedJobs     SavedJob[]
+}
+
+model Search {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  query       String
+  intentJson  String
+  resultCount Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model Match {
+  id          String   @id @default(cuid())
+  userId      String
+  jobId       String
+  searchId    String?
+  score       Int
+  reasonsJson String
+  gapsJson    String
+  narrative   String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobId])
+}
+
+model SavedJob {
+  id        String   @id @default(cuid())
+  userId    String
+  jobId     String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobId])
+}
+
+model ImportBatch {
+  id           String   @id @default(cuid())
+  actorId      String?
+  filename     String?
+  format       String
+  createdCount Int      @default(0)
+  updatedCount Int      @default(0)
+  skippedCount Int      @default(0)
+  errorJson    String?
+  createdAt    DateTime @default(now())
+}
