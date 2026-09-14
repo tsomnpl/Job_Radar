@@ -55,10 +55,16 @@ export default async function JobDetailPage({
           <Pill>{formatDuration(job.contractType)}</Pill>
           <Pill>{formatRemote(job.remoteType)}</Pill>
           <Pill>{formatSeniority(job.seniority)}</Pill>
+          {job.source === "ai-proposal" ? <Pill>Piste IA</Pill> : null}
           {formatSalary(job.salaryMin, job.salaryMax, job.currency) ? (
             <Pill>{formatSalary(job.salaryMin, job.salaryMax, job.currency)}</Pill>
           ) : null}
         </div>
+        {job.source === "ai-proposal" ? (
+          <p className="mt-4 text-sm text-warn">
+            Piste générée par l&apos;IA : ce n&apos;est pas une annonce officielle scrapée. À sourcer et valider.
+          </p>
+        ) : null}
         <div className="mt-6 flex flex-wrap gap-3">
           <SaveJobButton jobId={job.id} initialSaved={Boolean(savedRow)} />
           {user || !isClerkConfigured() ? (
@@ -68,7 +74,7 @@ export default async function JobDetailPage({
               Connexion pour postuler
             </a>
           )}
-          {job.sourceUrl ? (
+          {job.sourceUrl && !job.sourceUrl.startsWith("ai:") ? (
             <a
               href={job.sourceUrl}
               target="_blank"

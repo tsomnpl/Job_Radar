@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Pill, ScoreRing } from "@/components/brand";
+import { ProfileQuickForm } from "@/components/profile-quick-form";
 import { getSessionUser, isPersistedUser } from "@/lib/auth";
 import { withDb } from "@/lib/db";
 import { isClerkConfigured } from "@/lib/env";
@@ -8,6 +9,7 @@ import { asJsonArray } from "@/lib/normalize";
 import { prisma } from "@/lib/prisma";
 import { parseIntentHeuristic } from "@/lib/intent";
 import { rankJobsForUser } from "@/server/rank";
+import { listStockJobs } from "@/server/jobs-store";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +18,7 @@ export default async function DashboardPage() {
   if (!user && isClerkConfigured()) redirect("/sign-in");
 
   const canPersist = Boolean(user && isPersistedUser(user));
-  const [profile, searches, matches, saved] = await Promise.all([
+  const [profile, searches, saved] = await Promise.all([
     canPersist
       ? withDb("dashboard.profile", () => prisma.profile.findUnique({ where: { userId: user!.id } }), null)
       : Promise.resolve(null),
@@ -24,19 +26,6 @@ export default async function DashboardPage() {
       ? withDb(
           "dashboard.searches",
           () => prisma.search.findMany({ where: { userId: user!.id }, orderBy: { createdAt: "desc" }, take: 6 }),
-          [],
-        )
-      : Promise.resolve([]),
-    canPersist
-      ? withDb(
-          "dashboard.matches",
-          () =>
-            prisma.match.findMany({
-              where: { userId: user!.id },
-              include: { job: true },
-              orderBy: { score: "desc" },
-              take: 8,
-            }),
           [],
         )
       : Promise.resolve([]),
@@ -55,36 +44,59 @@ export default async function DashboardPage() {
       : Promise.resolve([]),
   ]);
 
-  const ranked = await rankJobsForUser({
-    intent: parseIntentHeuristic(profile?.headline || "opportunités pertinentes"),
-    userId: user?.id,
-    limit: 6,
-  });
+  const stock = await listStockJobs();
+  const ranked = stock.length
+    ? await rankJobsForUser({
+        intent: parseIntentHeuristic(profile?.headline || "opportunités"),
+        userId: user?.id,
+        limit: 6,
+      })
+    : [];
 
-  const applications = saved.filter((item) => item.status === "applied" || item.status === "interviewing" || item.status === "offer");
+  const applications = saved.filter(
+    (item) => item.status === "applied" || item.status === "interviewing" || item.status === "offer",
+  );
   const alerts = ranked.filter((job) => job.match.score >= 70).slice(0, 4);
   const skills = asJsonArray(profile?.skillsJson);
+  const empty =
+    stock.length === 0 && saved.length === 0 && searches.length === 0 && !profile?.cvText && skills.length === 0;
 
   return (
     <div className="space-y-8">
       <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-accent">Radar personnel</p>
-        <h1 className="mt-2 text-3xl font-semibold">Voici les opportunités que JobRadar a trouvées pour vous</h1>
+        <p className="text-xs uppercase tracking-[0.2em] text-accent">Compte</p>
+        <h1 className="mt-2 text-3xl font-semibold">
+          {empty ? "Compte prêt — tout est à zéro" : "Voici les opportunités que JobRadar a trouvées pour vous"}
+        </h1>
         <p className="mt-2 text-muted">
           {user?.name ?? "Profil"} · {user?.isDemo ? "session démo" : user?.email}
         </p>
-        {!canPersist ? (
-          <p className="mt-2 text-sm text-warn">
-            Postgres n&apos;est pas encore joignable : le radar affiche le catalogue. CV, sauvegardes et candidatures
-            se persisteront dès que DATABASE_URL postgres:// sera valide.
-          </p>
-        ) : null}
       </div>
+
+      {empty ? (
+        <section className="panel space-y-4 p-6">
+          <p className="text-sm text-muted">
+            Aucune offre en stock, aucun CV, aucune candidature. Remplissez votre profil, lancez une recherche (l&apos;IA
+            proposera des pistes s&apos;il n&apos;y a rien), ou importez des offres en admin.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Link href="/cv" className="btn-primary rounded-full px-4 py-2 text-sm font-semibold">
+              Ajouter mon CV
+            </Link>
+            <Link href="/search" className="rounded-full border border-line px-4 py-2 text-sm font-semibold">
+              Lancer une recherche
+            </Link>
+            <Link href="/admin" className="rounded-full border border-line px-4 py-2 text-sm font-semibold">
+              Importer des offres
+            </Link>
+          </div>
+        </section>
+      ) : null}
 
       <section className="grid gap-4 md:grid-cols-4">
         <article className="panel p-5">
-          <p className="text-xs uppercase tracking-[0.18em] text-muted">Recommandées</p>
-          <p className="mt-3 text-3xl font-semibold">{ranked.length}</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-muted">Offres en stock</p>
+          <p className="mt-3 text-3xl font-semibold">{stock.length}</p>
         </article>
         <article className="panel p-5">
           <p className="text-xs uppercase tracking-[0.18em] text-muted">Sur le radar</p>
@@ -101,10 +113,23 @@ export default async function DashboardPage() {
       </section>
 
       <section className="panel p-6">
+        <h2 className="font-semibold">Mon profil (à remplir)</h2>
+        <p className="mt-2 text-sm text-muted">Sans ça, le matching n&apos;a pas de compétences à comparer.</p>
+        <div className="mt-4">
+          <ProfileQuickForm
+            initialHeadline={profile?.headline ?? ""}
+            initialSkills={skills.join(", ")}
+            initialLocations={asJsonArray(profile?.locationsJson).join(", ")}
+            initialSeniority={profile?.seniority ?? ""}
+          />
+        </div>
+      </section>
+
+      <section className="panel p-6">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold">Meilleur match</h2>
-          <Link href="/jobs" className="text-sm text-accent">
-            Toutes les opportunités
+          <Link href="/search" className="text-sm text-accent">
+            Rechercher
           </Link>
         </div>
         {ranked[0] ? (
@@ -113,44 +138,13 @@ export default async function DashboardPage() {
               <p className="text-xs uppercase tracking-[0.16em] text-muted">{ranked[0].company}</p>
               <p className="mt-1 text-lg font-semibold">{ranked[0].title}</p>
               <p className="mt-1 text-sm text-muted">{ranked[0].location}</p>
-              <p className="mt-3 text-sm text-muted">{ranked[0].match.reasons[0]?.detail}</p>
             </div>
             <ScoreRing score={ranked[0].match.score} />
           </Link>
         ) : (
-          <p className="mt-3 text-sm text-muted">Aucune offre sur le radar pour l&apos;instant.</p>
+          <p className="mt-3 text-sm text-muted">0 offre. Importez-en en admin, ou cherchez pour que l&apos;IA propose.</p>
         )}
       </section>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className="panel p-6">
-          <h2 className="font-semibold">Nouvelles recommandations</h2>
-          <ul className="mt-4 space-y-3">
-            {ranked.map((job) => (
-              <li key={job.id} className="flex items-center justify-between gap-3">
-                <Link href={`/jobs/${job.id}`} className="text-sm hover:text-accent">
-                  {job.title}
-                  <span className="block text-xs text-muted">{job.company}</span>
-                </Link>
-                <ScoreRing score={job.match.score} />
-              </li>
-            ))}
-          </ul>
-        </section>
-        <section className="panel p-6">
-          <h2 className="font-semibold">Alertes radar</h2>
-          <ul className="mt-4 space-y-3 text-sm">
-            {alerts.map((job) => (
-              <li key={job.id}>
-                <Link href={`/jobs/${job.id}`} className="hover:text-accent">
-                  Match {job.match.score} · {job.title}
-                </Link>
-              </li>
-            ))}
-            {alerts.length === 0 ? <li className="text-muted">Complétez votre CV pour activer les alertes.</li> : null}
-          </ul>
-        </section>
-      </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="panel p-6">
@@ -164,7 +158,7 @@ export default async function DashboardPage() {
                 <span className="ml-2 text-xs text-muted">{item.status}</span>
               </li>
             ))}
-            {saved.length === 0 ? <li className="text-muted">Gardez une offre sur le radar depuis sa fiche.</li> : null}
+            {saved.length === 0 ? <li className="text-muted">0 — aucune sauvegarde.</li> : null}
           </ul>
         </section>
         <section className="panel p-6">
@@ -178,21 +172,21 @@ export default async function DashboardPage() {
                 <span className="ml-2 text-xs text-muted">{item.status}</span>
               </li>
             ))}
-            {applications.length === 0 ? <li className="text-muted">Suivez une candidature depuis une offre.</li> : null}
+            {applications.length === 0 ? <li className="text-muted">0 — aucune candidature.</li> : null}
           </ul>
         </section>
       </div>
 
       <section className="panel p-6">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold">Profil & CV</h2>
+          <h2 className="font-semibold">CV</h2>
           <Link href="/cv" className="text-sm text-accent">
-            Mettre à jour
+            Coller un CV
           </Link>
         </div>
-        <p className="mt-2 text-sm text-muted">{profile?.headline ?? "Importez votre CV pour personnaliser le radar."}</p>
+        <p className="mt-2 text-sm text-muted">{profile?.headline ?? "Aucun CV importé."}</p>
         <div className="mt-3 flex flex-wrap gap-2">
-          {skills.slice(0, 10).map((skill) => (
+          {skills.map((skill) => (
             <Pill key={skill}>{skill}</Pill>
           ))}
         </div>
@@ -206,7 +200,9 @@ export default async function DashboardPage() {
               </li>
             ))}
           </ul>
-        ) : null}
+        ) : (
+          <p className="mt-3 text-sm text-muted">0 recherche enregistrée.</p>
+        )}
       </section>
     </div>
   );

@@ -89,19 +89,23 @@ export default async function AdminPage() {
 
       <section className="panel p-6">
         <h2 className="font-semibold">Offres</h2>
-        <ul className="mt-4 space-y-3 text-sm">
-          {jobs.slice(0, 30).map((job) => (
-            <li key={job.id} className="flex items-center justify-between gap-3 border-b border-line pb-3 last:border-0">
-              <div>
-                <p className="font-medium">{job.title}</p>
-                <p className="text-xs text-muted">
-                  {job.company} · {job.location} · {job.active ? "publiée" : "masquée"}
-                </p>
-              </div>
-              <PublishToggle jobId={job.id} active={Boolean(job.active)} />
-            </li>
-          ))}
-        </ul>
+        {jobs.length === 0 ? (
+          <p className="mt-4 text-sm text-muted">0 offre. Collez un texte brut ou un CSV ci-dessus pour alimenter le radar.</p>
+        ) : (
+          <ul className="mt-4 space-y-3 text-sm">
+            {jobs.slice(0, 30).map((job) => (
+              <li key={job.id} className="flex items-center justify-between gap-3 border-b border-line pb-3 last:border-0">
+                <div>
+                  <p className="font-medium">{job.title}</p>
+                  <p className="text-xs text-muted">
+                    {job.company} · {job.location} · {job.source} · {job.active ? "publiée" : "masquée"}
+                  </p>
+                </div>
+                <PublishToggle jobId={job.id} active={Boolean(job.active)} />
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="panel p-6">

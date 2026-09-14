@@ -22,6 +22,7 @@ export function JobCard({ job }: { job: RankedJob }) {
         <Pill>{formatRemote(job.remoteType)}</Pill>
         <Pill>{formatContract(job.contractType)}</Pill>
         <Pill>{formatSeniority(job.seniority)}</Pill>
+        {job.source === "ai-proposal" ? <Pill>Piste IA</Pill> : null}
       </div>
       {topReason ? <p className="mt-4 text-sm text-muted">{topReason.detail}</p> : null}
       {job.match.gaps.length ? (

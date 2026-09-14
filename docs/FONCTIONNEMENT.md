@@ -1,0 +1,108 @@
+# Comment JobRadar fonctionne
+
+Ce document décrit **ce qui est réellement dans le code**, pour comparer avec un autre projet. Rien n’est inventé ici.
+
+## 1. Qu’est-ce que c’est
+
+**JobRadar** = radar d’opportunités (emplois, stages, missions, ONG, international), pas un générateur de CV.
+
+Tagline : *Your next opportunity, before you miss it.*
+
+Stack : Next.js 16 (App Router) · Clerk · Prisma / PostgreSQL · RodiumAI (`POST https://api.rodiumai.io/v1/chat/completions`) · Tailwind.
+
+Repo GitHub : `tsomnpl/Job_Radar`. Branche de travail actuelle : `cursor/jobradar-vercel-db-2d46` (PR #3).
+
+## 2. Compte (Clerk)
+
+1. L’utilisateur clique **Créer un compte** → `/sign-up` (composant Clerk).
+2. Après inscription / connexion, redirection vers **`/dashboard`**.
+3. Un utilisateur Prisma est créé (`clerkUserId`). **Profil, CV, offres, candidatures = 0.**
+4. Routes protégées (middleware `src/proxy.ts`) : `/dashboard`, `/cv`, `/admin`. Sans session → `/sign-in`.
+5. Si `ADMIN_CLERK_USER_IDS` est **vide**, tout compte connecté est admin (MVP). Sinon seuls les IDs listés le sont.
+6. Sans clés Clerk, mode démo local (un profil admin `demo_local_user`).
+
+Variables : `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, URLs `/sign-in` `/sign-up`.  
+Dans Clerk : autoriser le domaine Vercel (`job-radar-six-ochre.vercel.app`).
+
+## 3. Données : tout part de zéro
+
+- **Plus de 20 offres seed** au démarrage. `prepare-db` fait seulement `prisma migrate deploy`.
+- Une migration **dépublie** les offres `source = seed` déjà en base (si un deploy précédent les avait injectées).
+- `npm run db:seed` existe encore **si vous voulez** recharger un échantillon, ce n’est **pas** automatique.
+- Dashboard / Offres / Landing affichent **0** tant que personne n’importe. Les pistes IA d’une recherche **ne remplissent pas** `/jobs`.
+- **Vous** remplissez :
+  - **CV / profil** : headline, compétences, lieux, séniorité, ou collage de CV.
+  - **Admin** : coller une annonce brute (IA extraie) ou CSV/JSON, publier / dépublier.
+
+Postgres obligatoire pour **persister**. `DATABASE_URL` = `postgres://…` **sans crochets `[]`**.  
+L’app accepte aussi `Job_POSTGRES_URL` / `POSTGRES_URL` et retire les `["…"]`.
+
+SQLite `file:./dev.db` **ne marche pas** sur Vercel.
+
+## 4. Recherche (cœur produit)
+
+Page `/search?q=…` :
+
+1. **Intention** (`src/server/search.ts`) : RodiumAI parse la phrase (lieu, contrat, skills). Sinon parseur déterministe (`src/lib/intent.ts`).
+2. **Matching** (`src/lib/matching.ts`) contre le **stock importé** (`listStockJobs`, source ≠ `ai-proposal`) :  
+   skills 35 % · requête 20 % · lieu 15 % · séniorité 10 % · remote 10 % · langue 5 % · fraîcheur 5 %.  
+   Score + raisons + écarts (explicable).
+3. **Si le stock est vide OU moins de 3 offres à score ≥ 55** : l’IA **propose des pistes** (`src/server/propose.ts`).
+   - Avec `RODIUMAI_API_KEY` : 5 pistes JSON (titre, org, lieu, skills, description).
+   - Sans clé : 3 pistes heuristiques.
+   - Marquées `source = ai-proposal` / badge **Piste IA**. Ce **n’est pas** du scraping LinkedIn. Ce sont des pistes à sourcer, enregistrées (pour la fiche) si Postgres est là, **exclues du stock** `/jobs`.
+4. La recherche est mémorisée (`Search` + `Match`) si l’utilisateur est persisté.
+
+## 5. Pages
+
+| Page | Rôle |
+| --- | --- |
+| `/` | Landing logo + tagline + champ NL + CTA compte. 0 offre tant que le stock est vide. |
+| `/search` | Intention + stock + pistes IA si rien ne match. |
+| `/jobs` | Liste du stock uniquement (0 si vide). |
+| `/jobs/[id]` | Fiche : type, durée, lieu, score, pourquoi, écarts, sauver, candidature, lettre IA. |
+| `/dashboard` | Compte : compteurs à 0, formulaire profil, puis matchs / sauvegardes / candidatures. |
+| `/cv` | Profil court + collage CV + coaching IA. |
+| `/admin` | Stats, extraction texte brut, CSV/JSON, publier/dépublier. |
+| `/sign-in` `/sign-up` | Clerk (ou mode démo). |
+
+## 6. IA (Rodium) — où elle est branchée
+
+Toujours **serveur** (`src/server/rodium.ts`) : header `Authorization: Bearer rd_sk_…`, jamais exposé au client. Timeout 8 s. Réponse lue dans `choices[0].message.content`. Fallback déterministe si clé absente / erreur.
+
+- Intention de recherche
+- Parse CV
+- Narratif de match
+- Extraction d’offre depuis texte brut (admin)
+- Pistes si le stock ne suffit pas
+- Lettre de motivation
+- Conseils d’optimisation CV
+
+Pas de Money Fusion. Pas de crawl 24 h / CAPTCHA / LinkedIn-only.
+
+## 7. Comment ça doit se passer pour vous (parcours)
+
+1. Merger / déployer la PR #3. Mettre `DATABASE_URL` postgres. Redéployer.
+2. Ouvrir le site : landing blanche, **0 offre**.
+3. **Créer un compte** Clerk → dashboard **vide** (c’est voulu).
+4. Remplir le profil ou coller un CV.
+5. **Admin** : coller des vraies offres (ou CSV). Elles apparaissent dans `/jobs`.
+6. **Recherche** : « stage data remote Lomé ».
+   - S’il y a des offres importées qui matchent → elles s’affichent avec score.
+   - Sinon → bloc « Rien dans le stock » + **Pistes proposées par l’IA**.
+7. Sur une fiche : sauver / suivre candidature / générer une lettre.
+
+## 8. Fichiers clés
+
+- Auth : `src/lib/auth.ts`, `src/proxy.ts`
+- Matching : `src/lib/matching.ts`
+- Stock : `src/server/jobs-store.ts`
+- Pistes IA : `src/server/propose.ts`
+- Rodium : `src/server/rodium.ts`
+- Prisma : `prisma/schema.prisma`
+
+## 9. Ce qui n’est pas encore dans le code
+
+- Collecte automatique 24 h (ONG, ONU, RSS) — l’admin importe, la recherche IA propose
+- Emails de notification
+- Scraping LinkedIn (volontairement interdit)

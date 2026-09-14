@@ -1,6 +1,7 @@
 import { Pill } from "@/components/brand";
 import { CvForm } from "@/components/cv-form";
 import { CvOptimizeButton } from "@/components/cv-optimize-button";
+import { ProfileQuickForm } from "@/components/profile-quick-form";
 import { getSessionUser, isPersistedUser } from "@/lib/auth";
 import { withDb } from "@/lib/db";
 import { asJsonArray } from "@/lib/normalize";
@@ -23,14 +24,19 @@ export default async function CvPage() {
       <section className="space-y-4">
         <h1 className="text-3xl font-semibold">CV & profil</h1>
         <p className="mt-2 text-muted">
-          Importez le texte de votre CV. JobRadar en extrait un profil structuré (RodiumAI si configuré, sinon
-          parseur déterministe) pour alimenter le radar.
+          Compte neuf = profil vide. Remplissez les champs ou collez un CV. Rien n&apos;est prérempli.
         </p>
         {!user || !isPersistedUser(user) ? (
           <p className="text-sm text-warn">
-            Sans Postgres, le parsing fonctionne mais le profil ne sera pas enregistré.
+            Sans Postgres, l&apos;enregistrement du profil ne sera pas persisté.
           </p>
         ) : null}
+        <ProfileQuickForm
+          initialHeadline={profile?.headline ?? ""}
+          initialSkills={asJsonArray(profile?.skillsJson).join(", ")}
+          initialLocations={asJsonArray(profile?.locationsJson).join(", ")}
+          initialSeniority={profile?.seniority ?? ""}
+        />
         <CvForm initialText={profile?.cvText ?? ""} />
         <CvOptimizeButton cvText={profile?.cvText ?? ""} />
       </section>

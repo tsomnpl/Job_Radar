@@ -7,6 +7,7 @@ import { isClerkConfigured } from "@/lib/env";
 import { getSessionUser } from "@/lib/auth";
 import { rankJobsForUser } from "@/server/rank";
 import { parseIntentHeuristic } from "@/lib/intent";
+import { listStockJobs } from "@/server/jobs-store";
 
 const EXAMPLES = [
   "stage data remote Cotonou",
@@ -30,11 +31,14 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const user = await getSessionUser();
-  const preview = await rankJobsForUser({
-    intent: parseIntentHeuristic("opportunités Afrique de l'Ouest remote stage emploi"),
-    userId: user?.id,
-    limit: 3,
-  });
+  const stock = await listStockJobs();
+  const preview = stock.length
+    ? await rankJobsForUser({
+        intent: parseIntentHeuristic("opportunités"),
+        userId: user?.id,
+        limit: 3,
+      })
+    : [];
   const clerkEnabled = isClerkConfigured();
 
   return (
@@ -109,20 +113,27 @@ export default async function HomePage() {
             Tout voir
           </Link>
         </div>
-        <div className="grid gap-4">
-          {preview.map((job) => (
-            <Link key={job.id} href={`/jobs/${job.id}`} className="panel flex items-center justify-between gap-4 p-5">
-              <div>
-                <p className="text-xs uppercase tracking-[0.16em] text-muted">{job.company}</p>
-                <h3 className="mt-1 font-semibold">{job.title}</h3>
-                <p className="mt-1 text-sm text-muted">
-                  {job.location} · {formatOpportunityType(job.contractType)}
-                </p>
-              </div>
-              <ScoreRing score={job.match.score} />
-            </Link>
-          ))}
-        </div>
+        {preview.length ? (
+          <div className="grid gap-4">
+            {preview.map((job) => (
+              <Link key={job.id} href={`/jobs/${job.id}`} className="panel flex items-center justify-between gap-4 p-5">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.16em] text-muted">{job.company}</p>
+                  <h3 className="mt-1 font-semibold">{job.title}</h3>
+                  <p className="mt-1 text-sm text-muted">
+                    {job.location} · {formatOpportunityType(job.contractType)}
+                  </p>
+                </div>
+                <ScoreRing score={job.match.score} />
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="panel p-6 text-sm text-muted">
+            0 offre pour l&apos;instant. Créez un compte, importez des offres en admin, ou lancez une recherche : l&apos;IA
+            proposera des pistes s&apos;il n&apos;y a rien dans le stock.
+          </div>
+        )}
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">

@@ -2,7 +2,8 @@ import { buildCandidate, explainMatch, narrativeFromMatch } from "@/lib/matching
 import { asJsonArray } from "@/lib/normalize";
 import { logDbError } from "@/lib/db";
 import { prisma } from "@/lib/prisma";
-import { getJobById, jobExistsInDb, listActiveJobs } from "@/server/jobs-store";
+import { getJobById, jobExistsInDb, listStockJobs } from "@/server/jobs-store";
+import { proposeOpportunities, searchNeedsAiProposals } from "@/server/propose";
 import { isPersistedUser, type AppUser } from "@/lib/auth";
 import type { CandidateSnapshot, RankedJob, SearchIntent } from "@/lib/types";
 
@@ -33,16 +34,25 @@ export async function rankJobsForUser(params: {
   intent: SearchIntent;
   userId?: string | null;
   limit?: number;
+  proposeIfWeak?: boolean;
 }): Promise<RankedJob[]> {
   const [jobs, candidate] = await Promise.all([
-    listActiveJobs(),
+    listStockJobs(),
     loadCandidate(params.intent, params.userId),
   ]);
 
-  return jobs
+  let ranked = jobs
     .map((record) => ({ ...record, match: explainMatch(record, candidate) }))
     .sort((a, b) => b.match.score - a.match.score)
     .slice(0, params.limit ?? 40);
+
+  if (params.proposeIfWeak && searchNeedsAiProposals(ranked)) {
+    const proposed = await proposeOpportunities(params.intent, candidate);
+    const known = new Set(ranked.map((job) => job.id));
+    ranked = [...proposed.filter((job) => !known.has(job.id)), ...ranked].slice(0, params.limit ?? 40);
+  }
+
+  return ranked;
 }
 
 export async function persistSearch(params: {
