@@ -27,9 +27,9 @@ export default async function JobDetailPage({
   return (
     <div className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
       <article className="panel p-6 md:p-8">
-        <p className="text-xs uppercase tracking-[0.18em] text-[#8eacb0]">{job.company}</p>
+        <p className="text-xs uppercase tracking-[0.18em] text-muted">{job.company}</p>
         <h1 className="mt-2 text-3xl font-semibold">{job.title}</h1>
-        <p className="mt-2 text-[#b9d4d4]">
+        <p className="mt-2 text-muted">
           {job.location}
           {job.country ? ` · ${job.country}` : ""}
         </p>
@@ -48,13 +48,13 @@ export default async function JobDetailPage({
               href={job.sourceUrl}
               target="_blank"
               rel="noreferrer"
-              className="rounded-full bg-[#2ee6d6] px-4 py-2 text-sm font-semibold text-[#07111a]"
+              className="btn-primary rounded-full px-4 py-2 text-sm font-semibold"
             >
               Voir la source
             </a>
           ) : null}
         </div>
-        <div className="mt-8 space-y-3 text-sm leading-7 text-[#d7eeeb] whitespace-pre-wrap">{job.description}</div>
+        <div className="mt-8 space-y-3 text-sm leading-7 whitespace-pre-wrap">{job.description}</div>
       </article>
 
       <aside className="space-y-4">
@@ -63,18 +63,18 @@ export default async function JobDetailPage({
             <h2 className="font-semibold">Matching explicable</h2>
             <ScoreRing score={match.score} />
           </div>
-          <p className="mt-4 text-sm text-[#cfe7e4]">{narrative}</p>
+          <p className="mt-4 text-sm text-muted">{narrative}</p>
         </section>
         <section className="panel p-6 space-y-3">
           {match.reasons.map((reason) => (
-            <div key={reason.factor} className="border-b border-[#1c3a4d] pb-3 last:border-0 last:pb-0">
+            <div key={reason.factor} className="border-b border-line pb-3 last:border-0 last:pb-0">
               <div className="flex items-center justify-between text-sm">
                 <span>{reason.label}</span>
-                <span className={reason.polarity === "positive" ? "text-[#5be3a3]" : reason.polarity === "negative" ? "text-[#ff7a7a]" : "text-[#f5c14a]"}>
+                <span className={reason.polarity === "positive" ? "text-good" : reason.polarity === "negative" ? "text-danger" : "text-warn"}>
                   {reason.score}
                 </span>
               </div>
-              <p className="mt-1 text-xs text-[#8eacb0]">{reason.detail}</p>
+              <p className="mt-1 text-xs text-muted">{reason.detail}</p>
             </div>
           ))}
         </section>

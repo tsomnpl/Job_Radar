@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SiteHeader } from "@/components/site-header";
+import { ThemeProvider } from "@/components/theme-provider";
 import { isClerkConfigured } from "@/lib/env";
 import "./globals.css";
 
@@ -18,23 +19,32 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "JobRadar — AI Opportunity Intelligence",
   description:
-    "Recherche d'opportunités en langage naturel, matching explicable, parsing de CV et import d'offres. Propulsé par Clerk et RodiumAI.",
+    "Recherche d'opportunités en langage naturel, matching explicable, parsing de CV et import d'offres.",
 };
+
+const THEME_BOOTSTRAP = `try{if(localStorage.getItem('jobradar-theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   const clerkEnabled = isClerkConfigured();
   const body = (
-    <>
+    <ThemeProvider>
       <SiteHeader clerkEnabled={clerkEnabled} demo={!clerkEnabled} />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
-      <footer className="border-t border-[#1c3a4d] px-4 py-6 text-center text-xs text-[#8eacb0]">
-        JobRadar · intelligence d&apos;opportunités · hors FlyerMint
+      <footer className="border-t border-line px-4 py-6 text-center text-xs text-muted">
+        JobRadar · intelligence d&apos;opportunités
       </footer>
-    </>
+    </ThemeProvider>
   );
 
   return (
-    <html lang="fr" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html
+      lang="fr"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
+      </head>
       <body className="flex min-h-full flex-col">
         {clerkEnabled ? <ClerkProvider>{body}</ClerkProvider> : body}
       </body>

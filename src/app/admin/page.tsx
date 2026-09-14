@@ -13,7 +13,7 @@ export default async function AdminPage() {
     return (
       <div className="panel p-8">
         <h1 className="text-2xl font-semibold">Accès admin refusé</h1>
-        <p className="mt-2 text-[#b9d4d4]">Ajoutez votre Clerk user id dans ADMIN_CLERK_USER_IDS.</p>
+        <p className="mt-2 text-muted">Ajoutez votre Clerk user id dans ADMIN_CLERK_USER_IDS.</p>
       </div>
     );
   }
@@ -27,7 +27,7 @@ export default async function AdminPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-semibold">Import admin</h1>
-        <p className="mt-2 text-[#b9d4d4]">
+        <p className="mt-2 text-muted">
           {jobCount} offres en base. Mode {isClerkConfigured() ? "Clerk" : "démo"}.
         </p>
       </div>
@@ -36,7 +36,7 @@ export default async function AdminPage() {
       </section>
       <section className="panel p-6">
         <h2 className="font-semibold">Derniers imports</h2>
-        <ul className="mt-4 space-y-2 text-sm text-[#b9d4d4]">
+        <ul className="mt-4 space-y-2 text-sm text-muted">
           {batches.map((batch) => (
             <li key={batch.id}>
               {batch.createdAt.toISOString().slice(0, 16)} · {batch.format} · +{batch.createdCount} / ~{batch.updatedCount}{" "}

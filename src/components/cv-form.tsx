@@ -34,18 +34,18 @@ export function CvForm({ initialText = "" }: { initialText?: string }) {
         value={cvText}
         onChange={(event) => setCvText(event.target.value)}
         rows={16}
-        className="w-full rounded-2xl border border-[#1c3a4d] bg-[#0c1b27] p-4 text-sm outline-none focus:border-[#2ee6d6]"
+        className="field w-full rounded-2xl p-4 text-sm outline-none"
         placeholder="Collez votre CV en texte (FR ou EN). JobRadar en extrait compétences, séniorité, langues et localisations."
       />
       <div className="flex items-center gap-3">
         <button
           type="submit"
           disabled={pending}
-          className="rounded-xl bg-[#2ee6d6] px-4 py-2 text-sm font-semibold text-[#07111a] disabled:opacity-60"
+          className="btn-primary rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-60"
         >
           {pending ? "Analyse du CV..." : "Parser le CV"}
         </button>
-        {status ? <p className="text-sm text-[#b9d4d4]">{status}</p> : null}
+        {status ? <p className="text-sm text-muted">{status}</p> : null}
       </div>
     </form>
   );

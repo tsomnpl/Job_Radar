@@ -1,22 +1,54 @@
 @import "tailwindcss";
 
+/* JobRadar brand — logo blues (navy #050A1D, blue #1A6DFF, cyan #3DC8FF, white) */
 :root {
-  --bg: #07111a;
-  --bg-elev: #0c1b27;
-  --panel: rgba(13, 32, 46, 0.82);
-  --line: #1c3a4d;
-  --text: #e8f6f3;
-  --muted: #8eacb0;
-  --accent: #2ee6d6;
-  --accent-dim: #14685f;
+  color-scheme: light;
+  --bg: #f4f7ff;
+  --bg-elev: #ffffff;
+  --panel: #ffffff;
+  --line: #d5e0f5;
+  --text: #071033;
+  --muted: #5b6b8c;
+  --accent: #1a6dff;
+  --accent-2: #3dc8ff;
+  --accent-fg: #ffffff;
+  --header: rgba(244, 247, 255, 0.86);
+  --warn: #c4841d;
+  --danger: #d64545;
+  --good: #128a5a;
+  --ring-track: #e2e9f8;
+  --glow: rgba(26, 109, 255, 0.12);
+}
+
+html.dark {
+  color-scheme: dark;
+  --bg: #050a1d;
+  --bg-elev: #0b1433;
+  --panel: rgba(11, 20, 51, 0.9);
+  --line: #1c2d5c;
+  --text: #f4f7ff;
+  --muted: #9aa8c7;
+  --accent: #3dc8ff;
+  --accent-2: #1a6dff;
+  --accent-fg: #050a1d;
+  --header: rgba(5, 10, 29, 0.82);
   --warn: #f5c14a;
   --danger: #ff7a7a;
   --good: #5be3a3;
+  --ring-track: #17305a;
+  --glow: rgba(61, 200, 255, 0.14);
 }
 
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--text);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-line: var(--line);
+  --color-elev: var(--bg-elev);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -32,11 +64,11 @@ body {
 
 body {
   background:
-    radial-gradient(1200px 600px at 80% -10%, rgba(46, 230, 214, 0.12), transparent 50%),
-    radial-gradient(900px 500px at -10% 20%, rgba(245, 193, 74, 0.08), transparent 45%),
+    radial-gradient(1100px 520px at 88% -8%, var(--glow), transparent 55%),
     var(--bg);
   color: var(--text);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  transition: background-color 180ms ease, color 180ms ease;
 }
 
 a {
@@ -47,10 +79,30 @@ a {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(7, 16, 51, 0.04);
+}
+
+html.dark .panel {
+  box-shadow: none;
   backdrop-filter: blur(16px);
 }
 
 .radar-ring {
   background:
-    repeating-radial-gradient(circle at 50% 50%, transparent 0 18px, rgba(46, 230, 214, 0.08) 18px 19px);
+    repeating-radial-gradient(circle at 82% 42%, transparent 0 18px, color-mix(in srgb, var(--accent) 10%, transparent) 18px 19px);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.field {
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+}
+
+.field:focus,
+.field:focus-within {
+  border-color: var(--accent);
 }

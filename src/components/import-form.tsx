@@ -55,7 +55,7 @@ export function ImportForm() {
 
   return (
     <form onSubmit={importJson} className="space-y-4">
-      <label className="block text-sm text-[#b9d4d4]">
+      <label className="block text-sm text-muted">
         Fichier CSV ou JSON
         <input
           type="file"
@@ -68,17 +68,17 @@ export function ImportForm() {
         value={payload}
         onChange={(event) => setPayload(event.target.value)}
         rows={12}
-        className="w-full rounded-2xl border border-[#1c3a4d] bg-[#0c1b27] p-4 font-mono text-xs outline-none focus:border-[#2ee6d6]"
+        className="field w-full rounded-2xl p-4 font-mono text-xs outline-none"
         placeholder='{"jobs":[{"title":"...","company":"...","location":"...","description":"..."}]}'
       />
       <button
         type="submit"
         disabled={pending || !payload.trim()}
-        className="rounded-xl bg-[#2ee6d6] px-4 py-2 text-sm font-semibold text-[#07111a] disabled:opacity-60"
+        className="btn-primary rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-60"
       >
         {pending ? "Import..." : "Importer le JSON"}
       </button>
-      {status ? <p className="text-sm text-[#cfe7e4]">{status}</p> : null}
+      {status ? <p className="text-sm text-muted">{status}</p> : null}
     </form>
   );
 }

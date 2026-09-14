@@ -43,27 +43,27 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-semibold">Dashboard</h1>
-        <p className="mt-2 text-[#b9d4d4]">
+        <p className="mt-2 text-muted">
           {user?.name ?? "Profil"} · {user?.isDemo ? "session locale démo" : user?.email}
         </p>
       </div>
 
       <section className="grid gap-4 md:grid-cols-4">
         <article className="panel p-5">
-          <p className="text-xs uppercase tracking-[0.18em] text-[#8eacb0]">Profil</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-muted">Profil</p>
           <p className="mt-3 text-3xl font-semibold">{completeness}/4</p>
-          <p className="mt-1 text-sm text-[#b9d4d4]">champs structurés</p>
+          <p className="mt-1 text-sm text-muted">champs structurés</p>
         </article>
         <article className="panel p-5">
-          <p className="text-xs uppercase tracking-[0.18em] text-[#8eacb0]">Recherches</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-muted">Recherches</p>
           <p className="mt-3 text-3xl font-semibold">{searches.length}</p>
         </article>
         <article className="panel p-5">
-          <p className="text-xs uppercase tracking-[0.18em] text-[#8eacb0]">Matches</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-muted">Matches</p>
           <p className="mt-3 text-3xl font-semibold">{matches.length}</p>
         </article>
         <article className="panel p-5">
-          <p className="text-xs uppercase tracking-[0.18em] text-[#8eacb0]">Radar</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-muted">Radar</p>
           <p className="mt-3 text-3xl font-semibold">{saved.length}</p>
         </article>
       </section>
@@ -71,11 +71,11 @@ export default async function DashboardPage() {
       <section className="panel p-6">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold">CV structuré</h2>
-          <Link href="/cv" className="text-sm text-[#2ee6d6]">
+          <Link href="/cv" className="text-sm text-accent">
             Mettre à jour
           </Link>
         </div>
-        <p className="mt-2 text-sm text-[#b9d4d4]">{profile?.headline ?? "Aucun headline encore."}</p>
+        <p className="mt-2 text-sm text-muted">{profile?.headline ?? "Aucun headline encore."}</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {skills.slice(0, 10).map((skill) => (
             <Pill key={skill}>{skill}</Pill>
@@ -89,13 +89,13 @@ export default async function DashboardPage() {
           <ul className="mt-4 space-y-3 text-sm">
             {searches.map((search) => (
               <li key={search.id}>
-                <Link href={`/search?q=${encodeURIComponent(search.query)}`} className="hover:text-[#2ee6d6]">
+                <Link href={`/search?q=${encodeURIComponent(search.query)}`} className="hover:text-accent">
                   {search.query}
                 </Link>
-                <span className="ml-2 text-[#8eacb0]">{search.resultCount} résultats</span>
+                <span className="ml-2 text-muted">{search.resultCount} résultats</span>
               </li>
             ))}
-            {searches.length === 0 ? <li className="text-[#8eacb0]">Lancez une recherche NL.</li> : null}
+            {searches.length === 0 ? <li className="text-muted">Lancez une recherche NL.</li> : null}
           </ul>
         </section>
         <section className="panel p-6">
@@ -103,14 +103,14 @@ export default async function DashboardPage() {
           <ul className="mt-4 space-y-3">
             {matches.map((item) => (
               <li key={item.id} className="flex items-center justify-between gap-3">
-                <Link href={`/jobs/${item.jobId}`} className="text-sm hover:text-[#2ee6d6]">
+                <Link href={`/jobs/${item.jobId}`} className="text-sm hover:text-accent">
                   {item.job.title}
-                  <span className="block text-xs text-[#8eacb0]">{item.job.company}</span>
+                  <span className="block text-xs text-muted">{item.job.company}</span>
                 </Link>
                 <ScoreRing score={item.score} />
               </li>
             ))}
-            {matches.length === 0 ? <p className="text-sm text-[#8eacb0]">Aucun match persisté.</p> : null}
+            {matches.length === 0 ? <p className="text-sm text-muted">Aucun match persisté.</p> : null}
           </ul>
         </section>
       </div>

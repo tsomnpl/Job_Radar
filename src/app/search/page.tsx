@@ -35,7 +35,7 @@ export default async function SearchPage({
         <SearchBox initialQuery={query} size="md" />
       </div>
       <section className="panel p-5">
-        <p className="text-xs uppercase tracking-[0.18em] text-[#2ee6d6]">Intention extraite ({intent.source})</p>
+        <p className="text-xs uppercase tracking-[0.18em] text-accent">Intention extraite ({intent.source})</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {intent.location ? <Pill>{intent.location}</Pill> : null}
           {intent.remoteType ? <Pill>{intent.remoteType}</Pill> : null}
