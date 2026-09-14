@@ -12,6 +12,4 @@ export async function withDb<T>(scope: string, fn: () => Promise<T>, fallback: T
   }
 }
 
-export function isPostgresUrl(url = process.env.DATABASE_URL): boolean {
-  return /^(postgres(ql)?:\/\/|prisma\+postgres:\/\/)/i.test(url?.trim() ?? "");
-}
+export { isPostgresConnectionUrl as isPostgresUrl } from "@/lib/database-url";

@@ -2,6 +2,9 @@ import { PrismaClient } from "@prisma/client";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { applyDatabaseUrl } from "../scripts/resolve-database-url.mjs";
+
+applyDatabaseUrl();
 
 const prisma = new PrismaClient();
 

@@ -1,11 +1,11 @@
 import { spawnSync } from "node:child_process";
+import { applyDatabaseUrl, isPostgresConnectionUrl } from "./resolve-database-url.mjs";
 
-const url = process.env.DATABASE_URL?.trim() ?? "";
-const isPostgres = /^(postgres(ql)?:\/\/|prisma\+postgres:\/\/)/i.test(url);
+applyDatabaseUrl();
 
-if (!isPostgres) {
+if (!isPostgresConnectionUrl(process.env.DATABASE_URL)) {
   console.log(
-    "[prepare-db] DATABASE_URL is not Postgres — skipping migrate/seed. Search and jobs will use the bundled catalog.",
+    "[prepare-db] No Postgres URL found (DATABASE_URL / POSTGRES_URL / Job_POSTGRES_URL). Skipping migrate/seed. Search and jobs will use the bundled catalog.",
   );
   process.exit(0);
 }

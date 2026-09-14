@@ -41,8 +41,10 @@ Sans Postgres, `npm run dev` démarre quand même : recherche et offres servent 
 
 Les pages `/search`, `/jobs`, `/dashboard` tapent la base. **SQLite (`file:./dev.db`) ne fonctionne pas sur Vercel** — d'où les 500 même si Clerk et Rodium sont configurés.
 
-1. Créer une base **Postgres** (Vercel Storage → Postgres, ou Neon).
-2. Mettre `DATABASE_URL` sur `postgresql://...` (Production **et** Preview). Pas de `file:`.
+1. Créer une base **Postgres** (intégration Prisma Postgres, Vercel Storage, ou Neon).
+2. La variable doit s'appeler **`DATABASE_URL`** et la valeur doit commencer par `postgres://` ou `postgresql://` — **sans crochets `[]`**.
+   - Si Prisma affiche `Job_POSTGRES_URL=["postgres://..."]` et que les 3 lignes sont identiques : prends n'importe laquelle, copie **uniquement** ce qui est entre les guillemets à l'intérieur, et colle ça dans `DATABASE_URL`.
+   - L'app accepte aussi `POSTGRES_URL` / `Job_POSTGRES_URL` et retire les `[]` toute seule, mais le plus simple reste `DATABASE_URL=postgres://...`
 3. Vérifier aussi (noms exacts, Production + Preview) :
    - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` (`pk_live_…` en prod)
    - `CLERK_SECRET_KEY` (`sk_live_…` en prod, même instance que la publishable)
