@@ -1,4 +1,7 @@
 import { PrismaClient } from "@prisma/client";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const prisma = new PrismaClient();
 
@@ -8,360 +11,35 @@ function daysAgo(days) {
   return date;
 }
 
-function fingerprint(title, company, location) {
-  return [title, company, location]
-    .join("|")
+function fold(value) {
+  return value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
+    .toLowerCase()
+    .trim();
 }
 
-const jobs = [
-  {
-    title: "Data Analyst Junior",
-    company: "Kora Insights",
-    location: "Cotonou",
-    country: "BJ",
-    remoteType: "hybrid",
-    contractType: "cdi",
-    seniority: "junior",
-    salaryMin: 250000,
-    salaryMax: 400000,
-    currency: "XOF",
-    skills: ["sql", "excel", "powerbi", "python", "data"],
-    languages: ["fr"],
-    postedAt: daysAgo(3),
-    description:
-      "Analyser les funnels d'acquisition, construire des dashboards Power BI et fiabiliser les extraits SQL. Profil junior francophone, 1-3 ans, à l'aise avec Excel et Python.",
-  },
-  {
-    title: "Stage Data / Business Intelligence",
-    company: "Sahel Analytics",
-    location: "Cotonou",
-    country: "BJ",
-    remoteType: "remote",
-    contractType: "internship",
-    seniority: "intern",
-    salaryMin: 75000,
-    salaryMax: 120000,
-    currency: "XOF",
-    skills: ["sql", "excel", "data"],
-    languages: ["fr"],
-    postedAt: daysAgo(1),
-    description:
-      "Stage 4-6 mois. Nettoyage de données, reporting hebdo, initiation Python. Full remote possible pour un étudiant basé à Cotonou ou Lomé.",
-  },
-  {
-    title: "Product Designer",
-    company: "Baobab Labs",
-    location: "Accra",
-    country: "GH",
-    remoteType: "hybrid",
-    contractType: "cdi",
-    seniority: "mid",
-    salaryMin: 1800,
-    salaryMax: 2800,
-    currency: "USD",
-    skills: ["figma", "ux", "ui", "design", "product"],
-    languages: ["en"],
-    postedAt: daysAgo(6),
-    description:
-      "Design d'interfaces B2B, recherche utilisateur, design system Figma. Hybride Accra, anglais courant.",
-  },
-  {
-    title: "Backend Node.js Senior",
-    company: "Atlantic Pay",
-    location: "Remote Afrique",
-    country: null,
-    remoteType: "remote",
-    contractType: "cdi",
-    seniority: "senior",
-    salaryMin: 2500,
-    salaryMax: 4000,
-    currency: "EUR",
-    skills: ["nodejs", "typescript", "postgresql", "aws"],
-    languages: ["fr", "en"],
-    postedAt: daysAgo(5),
-    description:
-      "Concevoir des APIs paiements, Prisma/PostgreSQL, observabilité. Remote Afrique de l'Ouest, astreintes légères.",
-  },
-  {
-    title: "Fullstack React / Node",
-    company: "Nokoué Digital",
-    location: "Cotonou",
-    country: "BJ",
-    remoteType: "onsite",
-    contractType: "cdi",
-    seniority: "mid",
-    salaryMin: 350000,
-    salaryMax: 550000,
-    currency: "XOF",
-    skills: ["react", "nextjs", "nodejs", "typescript", "postgresql"],
-    languages: ["fr"],
-    postedAt: daysAgo(8),
-    description:
-      "Produit SaaS interne. Next.js, API Node, PostgreSQL. Présentiel Cotonou, stack moderne.",
-  },
-  {
-    title: "Growth Marketing Associate",
-    company: "MarketPulse Dakar",
-    location: "Dakar",
-    country: "SN",
-    remoteType: "hybrid",
-    contractType: "cdi",
-    seniority: "junior",
-    salaryMin: 300000,
-    salaryMax: 450000,
-    currency: "XOF",
-    skills: ["marketing", "growth", "seo", "excel"],
-    languages: ["fr"],
-    postedAt: daysAgo(4),
-    description:
-      "Acquisition paid/organic, SEO, dashboards. Junior 1-2 ans, francophone, hybride Dakar.",
-  },
-  {
-    title: "Mobile Flutter",
-    company: "Lagoon Apps",
-    location: "Abidjan",
-    country: "CI",
-    remoteType: "remote",
-    contractType: "freelance",
-    seniority: "mid",
-    salaryMin: 1500,
-    salaryMax: 2500,
-    currency: "EUR",
-    skills: ["flutter", "dart", "firebase"],
-    languages: ["fr"],
-    postedAt: daysAgo(2),
-    description:
-      "Mission freelance 3 mois, app wallet. Flutter/Dart, Firebase, remote francophone.",
-  },
-  {
-    title: "Customer Success Manager",
-    company: "Orbit SaaS",
-    location: "Paris",
-    country: "FR",
-    remoteType: "remote",
-    contractType: "cdi",
-    seniority: "mid",
-    salaryMin: 38000,
-    salaryMax: 48000,
-    currency: "EUR",
-    skills: ["customer success", "support", "excel"],
-    languages: ["fr", "en"],
-    postedAt: daysAgo(10),
-    description:
-      "Onboarding clients Afrique francophone, QBRs, suivi churn. Remote, fuseau WAT ok.",
-  },
-  {
-    title: "AI Engineer",
-    company: "Harmattan ML",
-    location: "Remote",
-    country: null,
-    remoteType: "remote",
-    contractType: "cdi",
-    seniority: "senior",
-    salaryMin: 4000,
-    salaryMax: 6500,
-    currency: "EUR",
-    skills: ["python", "machine learning", "nlp", "docker"],
-    languages: ["en"],
-    postedAt: daysAgo(7),
-    description:
-      "Pipelines RAG, évaluation de prompts, Python. Remote, anglais professionnel.",
-  },
-  {
-    title: "Comptable junior",
-    company: "Fiduciaire du Golfe",
-    location: "Cotonou",
-    country: "BJ",
-    remoteType: "onsite",
-    contractType: "cdi",
-    seniority: "junior",
-    salaryMin: 180000,
-    salaryMax: 250000,
-    currency: "XOF",
-    skills: ["comptabilite", "excel", "finance"],
-    languages: ["fr"],
-    postedAt: daysAgo(12),
-    description:
-      "Saisie, lettrage, déclarations. Présentiel Cotonou, excel avancé exigé.",
-  },
-  {
-    title: "Chef de projet digital",
-    company: "Teranga Studio",
-    location: "Dakar",
-    country: "SN",
-    remoteType: "hybrid",
-    contractType: "cdi",
-    seniority: "mid",
-    salaryMin: 500000,
-    salaryMax: 750000,
-    currency: "XOF",
-    skills: ["product", "marketing"],
-    languages: ["fr"],
-    postedAt: daysAgo(9),
-    description:
-      "Pilotage sites et campagnes, relation client, planning. Hybride Dakar.",
-  },
-  {
-    title: "Tech Recruiter",
-    company: "TalentWave",
-    location: "Remote",
-    country: null,
-    remoteType: "remote",
-    contractType: "freelance",
-    seniority: "mid",
-    salaryMin: 1200,
-    salaryMax: 2000,
-    currency: "EUR",
-    skills: ["recrutement"],
-    languages: ["fr", "en"],
-    postedAt: daysAgo(4),
-    description:
-      "Sourcing développeurs Afrique de l'Ouest, scoring de CV, process entretien.",
-  },
-  {
-    title: "UX Researcher",
-    company: "Accra Civic Tech",
-    location: "Accra",
-    country: "GH",
-    remoteType: "hybrid",
-    contractType: "cdd",
-    seniority: "mid",
-    salaryMin: 1600,
-    salaryMax: 2200,
-    currency: "USD",
-    skills: ["ux", "research", "figma"],
-    languages: ["en"],
-    postedAt: daysAgo(11),
-    description:
-      "Entretiens terrain, proto-tests, synthèse. CDD 9 mois, hybride Accra.",
-  },
-  {
-    title: "Alternance développement web",
-    company: "Studio Lumière",
-    location: "Lyon",
-    country: "FR",
-    remoteType: "hybrid",
-    contractType: "apprenticeship",
-    seniority: "intern",
-    salaryMin: 900,
-    salaryMax: 1400,
-    currency: "EUR",
-    skills: ["html", "css", "javascript", "react"],
-    languages: ["fr"],
-    postedAt: daysAgo(6),
-    description:
-      "Alternance 12 mois, sites vitrines et dashboards React. Hybride Lyon, remote 2j.",
-  },
-  {
-    title: "WordPress Freelance",
-    company: "Agence Lagune",
-    location: "Abidjan",
-    country: "CI",
-    remoteType: "hybrid",
-    contractType: "freelance",
-    seniority: "junior",
-    salaryMin: 200000,
-    salaryMax: 400000,
-    currency: "XOF",
-    skills: ["wordpress", "css", "html"],
-    languages: ["fr"],
-    postedAt: daysAgo(15),
-    description:
-      "Refontes vitrines, Elementor, intégration. Mission 6 semaines, Abidjan / remote.",
-  },
-  {
-    title: "Lead Data",
-    company: "Sahara Metrics",
-    location: "Remote",
-    country: null,
-    remoteType: "remote",
-    contractType: "cdi",
-    seniority: "lead",
-    salaryMin: 5500,
-    salaryMax: 7500,
-    currency: "EUR",
-    skills: ["python", "sql", "data", "machine learning"],
-    languages: ["fr", "en"],
-    postedAt: daysAgo(2),
-    description:
-      "Structurer l'équipe data, qualité des pipelines, mentoring. Remote EU/Afrique.",
-  },
-  {
-    title: "Support IT",
-    company: "Campus Lomé Tech",
-    location: "Lomé",
-    country: "TG",
-    remoteType: "onsite",
-    contractType: "cdi",
-    seniority: "junior",
-    salaryMin: 160000,
-    salaryMax: 220000,
-    currency: "XOF",
-    skills: ["support", "linux"],
-    languages: ["fr"],
-    postedAt: daysAgo(5),
-    description:
-      "Helpdesk campus, comptes, réseau local. Présentiel Lomé, junior bienvenu.",
-  },
-  {
-    title: "Business Analyst",
-    company: "Maghreb Ops",
-    location: "Casablanca",
-    country: "MA",
-    remoteType: "hybrid",
-    contractType: "cdi",
-    seniority: "mid",
-    salaryMin: 12000,
-    salaryMax: 18000,
-    currency: "MAD",
-    skills: ["excel", "sql", "data", "product"],
-    languages: ["fr"],
-    postedAt: daysAgo(8),
-    description:
-      "Cahiers des charges, mapping process, SQL léger. Hybride Casablanca.",
-  },
-  {
-    title: "DevOps Engineer",
-    company: "Fouta Cloud",
-    location: "Dakar",
-    country: "SN",
-    remoteType: "remote",
-    contractType: "cdi",
-    seniority: "senior",
-    salaryMin: 2800,
-    salaryMax: 4200,
-    currency: "EUR",
-    skills: ["aws", "docker", "kubernetes", "linux", "cicd"],
-    languages: ["fr", "en"],
-    postedAt: daysAgo(3),
-    description:
-      "CI/CD, Kubernetes, FinOps léger. Remote, astreintes 1 semaine / 6.",
-  },
-  {
-    title: "Community & ops stage",
-    company: "West Africa Builders",
-    location: "Lomé",
-    country: "TG",
-    remoteType: "hybrid",
-    contractType: "internship",
-    seniority: "intern",
-    salaryMin: 60000,
-    salaryMax: 90000,
-    currency: "XOF",
-    skills: ["community", "marketing"],
-    languages: ["fr"],
-    postedAt: daysAgo(1),
-    description:
-      "Animation communauté développeurs, newsletter, événements. Stage 3 mois, Lomé hybride.",
-  },
-];
+function fingerprint(title, company, location) {
+  return [title, company, location].map(fold).join("|");
+}
+
+function catalogJobId(value) {
+  const slug = value
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "")
+    .slice(0, 80);
+  return `cat_${slug}`;
+}
+
+const catalog = JSON.parse(
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../src/lib/job-catalog.json"), "utf8"),
+);
 
 async function main() {
-  for (const job of jobs) {
+  for (const job of catalog) {
+    const fp = fingerprint(job.title, job.company, job.location);
     const data = {
+      id: catalogJobId(fp),
       title: job.title,
       company: job.company,
       location: job.location,
@@ -378,17 +56,18 @@ async function main() {
       sourceUrl: null,
       source: "seed",
       language: job.languages[0] ?? "fr",
-      postedAt: job.postedAt,
-      fingerprint: fingerprint(job.title, job.company, job.location),
+      postedAt: daysAgo(job.postedDaysAgo),
+      fingerprint: fp,
       active: true,
     };
+    const { id, ...update } = data;
     await prisma.job.upsert({
       where: { fingerprint: data.fingerprint },
-      update: data,
-      create: data,
+      update,
+      create: { id, ...update },
     });
   }
-  console.log(`Seeded ${jobs.length} JobRadar offers.`);
+  console.log(`Seeded ${catalog.length} JobRadar offers.`);
 }
 
 main()

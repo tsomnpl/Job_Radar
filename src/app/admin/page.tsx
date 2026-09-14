@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { ImportForm } from "@/components/import-form";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, isPersistedUser } from "@/lib/auth";
+import { withDb } from "@/lib/db";
 import { isClerkConfigured } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 
@@ -18,10 +19,17 @@ export default async function AdminPage() {
     );
   }
 
-  const [jobCount, batches] = await Promise.all([
-    prisma.job.count(),
-    prisma.importBatch.findMany({ orderBy: { createdAt: "desc" }, take: 8 }),
-  ]);
+  const dbReady = isPersistedUser(user);
+  const [jobCount, batches] = dbReady
+    ? await Promise.all([
+        withDb("admin.jobCount", () => prisma.job.count(), 0),
+        withDb(
+          "admin.batches",
+          () => prisma.importBatch.findMany({ orderBy: { createdAt: "desc" }, take: 8 }),
+          [],
+        ),
+      ])
+    : [0, []];
 
   return (
     <div className="space-y-6">
@@ -30,6 +38,11 @@ export default async function AdminPage() {
         <p className="mt-2 text-[#b9d4d4]">
           {jobCount} offres en base. Mode {isClerkConfigured() ? "Clerk" : "démo"}.
         </p>
+        {!dbReady ? (
+          <p className="mt-2 text-sm text-[#f5c14a]">
+            Postgres n&apos;est pas joignable : l&apos;import CSV/JSON nécessite une DATABASE_URL postgresql://.
+          </p>
+        ) : null}
       </div>
       <section className="panel p-6">
         <ImportForm />
@@ -39,8 +52,8 @@ export default async function AdminPage() {
         <ul className="mt-4 space-y-2 text-sm text-[#b9d4d4]">
           {batches.map((batch) => (
             <li key={batch.id}>
-              {batch.createdAt.toISOString().slice(0, 16)} · {batch.format} · +{batch.createdCount} / ~{batch.updatedCount}{" "}
-              / skip {batch.skippedCount}
+              {batch.createdAt.toISOString().slice(0, 16)} · {batch.format} · +{batch.createdCount} / ~
+              {batch.updatedCount} / skip {batch.skippedCount}
               {batch.filename ? ` · ${batch.filename}` : ""}
             </li>
           ))}

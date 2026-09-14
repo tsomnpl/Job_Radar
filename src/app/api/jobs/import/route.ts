@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import { isPersistedUser, requireAdmin } from "@/lib/auth";
 import { jobsFromCsv, jobsFromUnknown, normalizeJobInput } from "@/lib/import-jobs";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(request: Request) {
   try {
     const admin = await requireAdmin();
+    if (!isPersistedUser(admin)) {
+      return NextResponse.json({ error: "DATABASE_UNAVAILABLE" }, { status: 503 });
+    }
     const contentType = request.headers.get("content-type") ?? "";
     let filename: string | null = null;
     let format = "json";
@@ -92,6 +95,7 @@ export async function POST(request: Request) {
     if (error instanceof Error && error.message === "IMPORT_FORMAT_INVALID") {
       return NextResponse.json({ error: "IMPORT_FORMAT_INVALID" }, { status: 400 });
     }
-    throw error;
+    console.error("[api.import]", error instanceof Error ? error.message : "unknown");
+    return NextResponse.json({ error: "DATABASE_UNAVAILABLE" }, { status: 503 });
   }
 }

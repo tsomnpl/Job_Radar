@@ -26,7 +26,7 @@ export default async function SearchPage({
   const user = await getSessionUser();
   const intent = await resolveIntent(query);
   const ranked = await rankJobsForUser({ intent, userId: user?.id });
-  await persistSearch({ userId: user?.id, intent, ranked });
+  await persistSearch({ user, intent, ranked });
 
   return (
     <div className="space-y-8">

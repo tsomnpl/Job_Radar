@@ -18,23 +18,44 @@ Produit indépendant. **Ne pas mélanger avec FlyerMint / `1st_SaaS`.**
 
 - Next.js 16 (App Router) + TypeScript + Tailwind CSS 4
 - Clerk
-- Prisma + SQLite
+- Prisma + **PostgreSQL** (catalogue bundlé en secours si la base est down)
 - RodiumAI (`POST /v1/chat/completions`)
 - Vitest
 
-## Setup
+## Setup local
 
 ```bash
-npm install
+docker compose up -d
 cp .env.example .env
-npx prisma db push
+npm install
+npx prisma migrate deploy
 npm run db:seed
 npm run dev
 ```
 
 Ouvrir [http://localhost:3000](http://localhost:3000).
 
-Variables utiles :
+Sans Postgres, `npm run dev` démarre quand même : recherche et offres servent le catalogue intégré. CV, sauvegardes et import admin exigent Postgres.
+
+## Vercel / production
+
+Les pages `/search`, `/jobs`, `/dashboard` tapent la base. **SQLite (`file:./dev.db`) ne fonctionne pas sur Vercel** — d'où les 500 même si Clerk et Rodium sont configurés.
+
+1. Créer une base **Postgres** (Vercel Storage → Postgres, ou Neon).
+2. Mettre `DATABASE_URL` sur `postgresql://...` (Production **et** Preview). Pas de `file:`.
+3. Vérifier aussi (noms exacts, Production + Preview) :
+   - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` (`pk_live_…` en prod)
+   - `CLERK_SECRET_KEY` (`sk_live_…` en prod, même instance que la publishable)
+   - `RODIUMAI_API_KEY` (`rd_sk_…`, serveur uniquement)
+   - `RODIUMAI_BASE_URL=https://api.rodiumai.io/v1`
+   - `RODIUMAI_MODEL=rodiumai/smart`
+   - `NEXT_PUBLIC_APP_URL=https://<votre-domaine>`
+4. Dans le dashboard Clerk : ajouter `https://job-radar-six-ochre.vercel.app` (et le domaine custom) aux origins autorisées.
+5. **Redéployer** après chaque changement d'env.
+
+Le build exécute `prisma migrate deploy` + seed si `DATABASE_URL` est Postgres. Si la base est indisponible, le site reste lisible via le catalogue.
+
+## Variables
 
 | Variable | Rôle |
 | --- | --- |
@@ -42,7 +63,9 @@ Variables utiles :
 | `RODIUMAI_API_KEY` | LLM. Vide = parseurs déterministes |
 | `RODIUMAI_BASE_URL` | `https://api.rodiumai.io/v1` |
 | `ADMIN_CLERK_USER_IDS` | IDs Clerk admin (import) |
-| `DATABASE_URL` | `file:./dev.db` par défaut |
+| `DATABASE_URL` | `postgresql://…` obligatoire en production |
+
+Ne jamais committer ni afficher les secrets (`sk_`, `rd_sk_`).
 
 ## Scripts
 

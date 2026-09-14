@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireUser } from "@/lib/auth";
+import { isPersistedUser, requireUser } from "@/lib/auth";
+import { logDbError } from "@/lib/db";
 import { prisma } from "@/lib/prisma";
 import { parseCv } from "@/server/cv";
 
@@ -13,6 +14,10 @@ export async function POST(request: Request) {
     }
 
     const parsed = await parseCv(cvText);
+    if (!isPersistedUser(user)) {
+      return NextResponse.json({ parsed, profileId: null, persisted: false }, { status: 200 });
+    }
+
     const profile = await prisma.profile.upsert({
       where: { userId: user.id },
       update: {
@@ -42,11 +47,12 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json({ parsed, profileId: profile.id });
+    return NextResponse.json({ parsed, profileId: profile.id, persisted: true });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHENTICATED") {
       return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
     }
-    throw error;
+    logDbError("api.cv", error);
+    return NextResponse.json({ error: "DATABASE_UNAVAILABLE" }, { status: 503 });
   }
 }

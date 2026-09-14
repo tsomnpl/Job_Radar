@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   const user = await getSessionUser();
   const intent = await resolveIntent(query);
   const ranked = await rankJobsForUser({ intent, userId: user?.id, limit: 40 });
-  await persistSearch({ userId: user?.id, intent, ranked });
+  await persistSearch({ user, intent, ranked });
 
   return NextResponse.json({
     intent,

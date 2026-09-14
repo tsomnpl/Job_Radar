@@ -1,12 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { toJobRecord } from "@/lib/jobs";
+import { listActiveJobs } from "@/server/jobs-store";
 
 export async function GET() {
-  const jobs = await prisma.job.findMany({
-    where: { active: true },
-    orderBy: { postedAt: "desc" },
-    take: 50,
-  });
-  return NextResponse.json({ jobs: jobs.map(toJobRecord) });
+  const jobs = await listActiveJobs();
+  return NextResponse.json({ jobs: jobs.slice(0, 50) });
 }

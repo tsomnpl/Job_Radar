@@ -1,6 +1,7 @@
 import { Pill } from "@/components/brand";
 import { CvForm } from "@/components/cv-form";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, isPersistedUser } from "@/lib/auth";
+import { withDb } from "@/lib/db";
 import { asJsonArray } from "@/lib/normalize";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
@@ -11,16 +12,24 @@ export const dynamic = "force-dynamic";
 export default async function CvPage() {
   const user = await getSessionUser();
   if (!user && isClerkConfigured()) redirect("/sign-in");
-  const profile = user ? await prisma.profile.findUnique({ where: { userId: user.id } }) : null;
+  const profile =
+    user && isPersistedUser(user)
+      ? await withDb("cv.profile", () => prisma.profile.findUnique({ where: { userId: user.id } }), null)
+      : null;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
       <section className="space-y-4">
         <h1 className="text-3xl font-semibold">CV & profil</h1>
-        <p className="text-[#b9d4d4]">
+        <p className="mt-2 text-[#b9d4d4]">
           Collez le texte de votre CV. JobRadar en extrait un profil structuré (RodiumAI si configuré, sinon parseur
           déterministe).
         </p>
+        {!user || !isPersistedUser(user) ? (
+          <p className="text-sm text-[#f5c14a]">
+            Sans Postgres, le parsing fonctionne mais le profil ne sera pas enregistré.
+          </p>
+        ) : null}
         <CvForm initialText={profile?.cvText ?? ""} />
       </section>
       <aside className="panel h-fit space-y-3 p-6">

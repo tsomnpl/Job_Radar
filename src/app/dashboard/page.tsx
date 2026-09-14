@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Pill, ScoreRing } from "@/components/brand";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, isPersistedUser } from "@/lib/auth";
+import { withDb } from "@/lib/db";
 import { asJsonArray } from "@/lib/normalize";
 import { prisma } from "@/lib/prisma";
 
@@ -8,27 +9,44 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const user = await getSessionUser();
+  const canPersist = Boolean(user && isPersistedUser(user));
   const [profile, searches, matches, saved] = await Promise.all([
-    user ? prisma.profile.findUnique({ where: { userId: user.id } }) : null,
-    user
-      ? prisma.search.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, take: 6 })
-      : [],
-    user
-      ? prisma.match.findMany({
-          where: { userId: user.id },
-          include: { job: true },
-          orderBy: { score: "desc" },
-          take: 6,
-        })
-      : [],
-    user
-      ? prisma.savedJob.findMany({
-          where: { userId: user.id },
-          include: { job: true },
-          orderBy: { createdAt: "desc" },
-          take: 6,
-        })
-      : [],
+    canPersist
+      ? withDb("dashboard.profile", () => prisma.profile.findUnique({ where: { userId: user!.id } }), null)
+      : Promise.resolve(null),
+    canPersist
+      ? withDb(
+          "dashboard.searches",
+          () => prisma.search.findMany({ where: { userId: user!.id }, orderBy: { createdAt: "desc" }, take: 6 }),
+          [],
+        )
+      : Promise.resolve([]),
+    canPersist
+      ? withDb(
+          "dashboard.matches",
+          () =>
+            prisma.match.findMany({
+              where: { userId: user!.id },
+              include: { job: true },
+              orderBy: { score: "desc" },
+              take: 6,
+            }),
+          [],
+        )
+      : Promise.resolve([]),
+    canPersist
+      ? withDb(
+          "dashboard.saved",
+          () =>
+            prisma.savedJob.findMany({
+              where: { userId: user!.id },
+              include: { job: true },
+              orderBy: { createdAt: "desc" },
+              take: 6,
+            }),
+          [],
+        )
+      : Promise.resolve([]),
   ]);
 
   const skills = asJsonArray(profile?.skillsJson);
@@ -46,13 +64,19 @@ export default async function DashboardPage() {
         <p className="mt-2 text-[#b9d4d4]">
           {user?.name ?? "Profil"} · {user?.isDemo ? "session locale démo" : user?.email}
         </p>
+        {!canPersist ? (
+          <p className="mt-2 text-sm text-[#f5c14a]">
+            La base Postgres n&apos;est pas encore joignable : le radar fonctionne, mais le profil et les offres
+            sauvegardées ne sont pas persistés.
+          </p>
+        ) : null}
       </div>
 
       <section className="grid gap-4 md:grid-cols-4">
         <article className="panel p-5">
           <p className="text-xs uppercase tracking-[0.18em] text-[#8eacb0]">Profil</p>
           <p className="mt-3 text-3xl font-semibold">{completeness}/4</p>
-          <p className="mt-1 text-sm text-[#b9d4d4]">champs structurés</p>
+          <p className="mt-1 text-sm text-[#8eacb0]">champs structurés</p>
         </article>
         <article className="panel p-5">
           <p className="text-xs uppercase tracking-[0.18em] text-[#8eacb0]">Recherches</p>

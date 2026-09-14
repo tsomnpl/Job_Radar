@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { Pill, ScoreRing } from "@/components/brand";
 import { SaveJobButton } from "@/components/save-job-button";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, isPersistedUser } from "@/lib/auth";
+import { withDb } from "@/lib/db";
 import { formatContract, formatRemote, formatSalary, formatSeniority } from "@/lib/jobs";
 import { prisma } from "@/lib/prisma";
 import { matchOneJob } from "@/server/rank";
@@ -20,9 +21,19 @@ export default async function JobDetailPage({
   if (!matched) notFound();
   const { job, match } = matched;
   const narrative = await explainNarrative(job, match);
-  const saved = user
-    ? Boolean(await prisma.savedJob.findUnique({ where: { userId_jobId: { userId: user.id, jobId: id } } }))
-    : false;
+  const saved =
+    user && isPersistedUser(user)
+      ? await withDb(
+          "savedJob",
+          async () =>
+            Boolean(
+              await prisma.savedJob.findUnique({
+                where: { userId_jobId: { userId: user.id, jobId: id } },
+              }),
+            ),
+          false,
+        )
+      : false;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
@@ -48,13 +59,13 @@ export default async function JobDetailPage({
               href={job.sourceUrl}
               target="_blank"
               rel="noreferrer"
-              className="rounded-full bg-[#2ee6d6] px-4 py-2 text-sm font-semibold text-[#07111a]"
+              className="btn-primary rounded-full px-4 py-2 text-sm font-semibold"
             >
               Voir la source
             </a>
           ) : null}
         </div>
-        <div className="mt-8 space-y-3 text-sm leading-7 text-[#d7eeeb] whitespace-pre-wrap">{job.description}</div>
+        <div className="mt-8 space-y-3 text-sm leading-7 whitespace-pre-wrap">{job.description}</div>
       </article>
 
       <aside className="space-y-4">
@@ -63,7 +74,7 @@ export default async function JobDetailPage({
             <h2 className="font-semibold">Matching explicable</h2>
             <ScoreRing score={match.score} />
           </div>
-          <p className="mt-4 text-sm text-[#cfe7e4]">{narrative}</p>
+          <p className="mt-4 text-sm text-[#b9d4d4]">{narrative}</p>
         </section>
         <section className="panel p-6 space-y-3">
           {match.reasons.map((reason) => (
