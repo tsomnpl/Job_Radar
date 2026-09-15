@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AdminJobActions } from "@/components/admin-job-actions";
 import { AdminRadarForms } from "@/components/admin-extract-form";
 import { ImportForm } from "@/components/import-form";
+import { getAdminOrNull } from "@/lib/admin-page";
 import { displayField, formatContract, formatJobDeadline } from "@/lib/jobs";
 import { prisma } from "@/lib/prisma";
 import { listAllJobs } from "@/server/jobs-store";
@@ -14,6 +15,8 @@ export default async function AdminPage({
 }: {
   searchParams: Promise<{ tab?: string; q?: string }>;
 }) {
+  const admin = await getAdminOrNull();
+  if (!admin) return null;
   const { tab = "overview", q = "" } = await searchParams;
   const jobs = await withTimeout(listAllJobs(), 2500, []);
   const query = q.trim().toLowerCase();

@@ -1,8 +1,10 @@
 import { OpportunityForm } from "@/components/opportunity-form";
+import { getAdminOrNull } from "@/lib/admin-page";
 
 export const dynamic = "force-dynamic";
 
-export default function AdminNewPage() {
+export default async function AdminNewPage() {
+  if (!(await getAdminOrNull())) return null;
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">Add Opportunity</h2>
