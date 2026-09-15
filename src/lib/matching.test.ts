@@ -133,7 +133,26 @@ describe("explainMatch", () => {
 
   it("keeps internship search on titles that are actually internships", () => {
     const intent = parseIntentHeuristic("internship cybersecurity remote");
-    expect(jobFitsSearchIntent({ title: "Cybersecurity Intern", source: "jobicy" }, intent)).toBe(true);
-    expect(jobFitsSearchIntent({ title: "Healthcare Virtual Assistant", source: "remoteok" }, intent)).toBe(false);
+    const internJob = {
+      title: "Cybersecurity Intern",
+      source: "jobicy",
+      location: "Worldwide",
+      country: null,
+      company: "Northwind",
+      skills: ["security"],
+      description: "Global remote internship in cybersecurity.",
+    };
+    const pharmacy = {
+      title: "Pharmacy Intern",
+      source: "themuse",
+      location: "Richmond Heights, OH",
+      country: null,
+      company: "CVS Health",
+      skills: [],
+      description: "HIPAA security policies for pharmacy operations.",
+    };
+    expect(jobFitsSearchIntent(internJob, intent)).toBe(true);
+    expect(jobFitsSearchIntent(pharmacy, intent)).toBe(false);
+    expect(jobFitsSearchIntent(pharmacy, parseIntentHeuristic("stage cybersécurité Togo"))).toBe(false);
   });
 });

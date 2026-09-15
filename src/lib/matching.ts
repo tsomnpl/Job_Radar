@@ -1,7 +1,7 @@
-import { fold, normalizeSkill, unique } from "./normalize";
+import { fold, normalizeSkill, tokenize, unique } from "./normalize";
 import { hasInternTitle } from "./jobs";
 import { isUnrestrictedRemoteLocation, placesCompatible } from "./places";
-import { tokenMatchesHaystack } from "./synonyms";
+import { tokenMatchesJob } from "./synonyms";
 import type {
   CandidateSnapshot,
   JobRecord,
@@ -22,12 +22,39 @@ export function selectVerifiedMatches<T extends { source: string; match: { score
   );
 }
 
-export function jobFitsSearchIntent(job: Pick<JobRecord, "title" | "source">, intent: SearchIntent): boolean {
+export function jobFitsSearchIntent(
+  job: Pick<JobRecord, "title" | "source" | "location" | "country" | "company" | "skills" | "description">,
+  intent: SearchIntent,
+): boolean {
   if (!isVerifiedOpportunitySource(job.source)) return false;
-  if (intent.contractType === "internship" || intent.seniority === "intern") {
-    return hasInternTitle(job.title);
+  const intern = intent.contractType === "internship" || intent.seniority === "intern";
+  if (intern && !hasInternTitle(job.title)) return false;
+
+  if (intent.location || intent.country) {
+    const jobPlace = `${job.location} ${job.country ?? ""}`;
+    const needles = [intent.location, intent.country].filter((item): item is string => Boolean(item));
+    const geoHit = needles.some((place) => placesCompatible(place, jobPlace) || placesCompatible(place, job.location));
+    const worldwide = isUnrestrictedRemoteLocation(job.location);
+    if (!geoHit && !worldwide) return false;
   }
-  return true;
+
+  const locationFolds = [intent.location, intent.country]
+    .filter((item): item is string => Boolean(item))
+    .map(fold);
+  const tokens = unique(
+    [...intent.keywords, ...intent.skills, ...tokenize(intent.query)].filter((token) => {
+      const folded = fold(token);
+      if (folded.length < 3) return false;
+      if (intern && /^(stage|intern|internship|stagiaire|trainee|remote)$/.test(folded)) return false;
+      return !locationFolds.some((place) => place.includes(folded) || folded.includes(place));
+    }),
+  );
+  if (tokens.length === 0) return true;
+  const titleFold = fold(job.title);
+  const haystack = fold(`${job.title} ${job.company} ${job.skills.join(" ")} ${job.description}`);
+  const hits = tokens.filter((token) => tokenMatchesJob(token, titleFold, haystack));
+  const needed = tokens.length >= 4 ? 2 : 1;
+  return hits.length >= needed;
 }
 
 function isVerifiedOpportunitySource(source: string): boolean {
@@ -75,12 +102,12 @@ function skillOverlap(candidate: string[], job: string[]) {
 
 function queryScore(query: string, job: JobRecord): number {
   if (!query.trim()) return 50;
+  const titleFold = fold(job.title);
   const haystack = fold(`${job.title} ${job.company} ${job.description} ${job.skills.join(" ")}`);
   const tokens = unique(fold(query).split(/[^a-z0-9+#]+/g).filter((token) => token.length > 2));
   if (tokens.length === 0) return 50;
-  const hits = tokens.filter((token) => tokenMatchesHaystack(token, haystack));
-  const titleFold = fold(job.title);
-  const titleBoost = tokens.some((token) => tokenMatchesHaystack(token, titleFold)) ? 18 : 0;
+  const hits = tokens.filter((token) => tokenMatchesJob(token, titleFold, haystack));
+  const titleBoost = tokens.some((token) => tokenMatchesJob(token, titleFold, titleFold)) ? 18 : 0;
   return clamp((hits.length / tokens.length) * 82 + titleBoost);
 }
 

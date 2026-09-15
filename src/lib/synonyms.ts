@@ -48,3 +48,13 @@ export function variantInHaystack(variant: string, haystackFolded: string): bool
 export function tokenMatchesHaystack(token: string, haystackFolded: string): boolean {
   return expandQueryToken(token).some((variant) => variantInHaystack(variant, haystackFolded));
 }
+
+const TITLE_ONLY_VARIANTS = new Set(["security", "securite"]);
+
+/** Generic words like "security" only count in the title, so HIPAA copy does not fake a cyber match. */
+export function tokenMatchesJob(token: string, titleFolded: string, haystackFolded: string): boolean {
+  return expandQueryToken(token).some((variant) => {
+    if (TITLE_ONLY_VARIANTS.has(variant)) return variantInHaystack(variant, titleFolded);
+    return variantInHaystack(variant, haystackFolded);
+  });
+}

@@ -132,6 +132,7 @@ describe("public source parsers", () => {
     expect(jobs[0].id).toBe("pub_themuse_4401");
     expect(jobs[0].contractType).toBe("internship");
     expect(jobs[0].location).toBe("Flexible / Remote");
+    expect(jobs[0].remoteType).toBe("remote");
     expect(jobs[0].sourceUrl).toBe("https://www.themuse.com/jobs/celonis/intern-ai-management");
   });
 

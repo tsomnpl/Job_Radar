@@ -47,7 +47,14 @@ export function isUnrestrictedRemoteLocation(location: string | null | undefined
 
 export function isAfricanSearch(input: { location?: string | null; country?: string | null; query?: string }): boolean {
   const blob = fold(`${input.location ?? ""} ${input.country ?? ""} ${input.query ?? ""}`);
-  return [...AFRICA_PLACES].some((place) => blob.includes(place));
+  return [...AFRICA_PLACES].some((place) => placeTokenIn(blob, place));
+}
+
+function placeTokenIn(haystack: string, place: string): boolean {
+  if (place.length <= 2) {
+    return new RegExp(`(?:^|[^a-z0-9])${place}(?:[^a-z0-9]|$)`).test(haystack);
+  }
+  return haystack.includes(place);
 }
 
 export function placesCompatible(candidatePlace: string, jobPlace: string): boolean {
@@ -56,7 +63,7 @@ export function placesCompatible(candidatePlace: string, jobPlace: string): bool
   if (!candidate || !job) return false;
   if (job.includes(candidate) || candidate.includes(job)) return true;
   if (isUnrestrictedRemoteLocation(jobPlace)) return true;
-  const candidateAfrica = [...AFRICA_PLACES].some((place) => candidate.includes(place));
-  const jobAfrica = [...AFRICA_PLACES].some((place) => job.includes(place));
+  const candidateAfrica = [...AFRICA_PLACES].some((place) => placeTokenIn(candidate, place));
+  const jobAfrica = [...AFRICA_PLACES].some((place) => placeTokenIn(job, place));
   return candidateAfrica && jobAfrica;
 }

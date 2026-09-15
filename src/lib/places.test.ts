@@ -6,6 +6,7 @@ describe("places", () => {
     expect(isUnrestrictedRemoteLocation("Flexible / Remote")).toBe(true);
     expect(placesCompatible("Togo", "Flexible / Remote")).toBe(true);
     expect(placesCompatible("Togo", "APAC, Europe")).toBe(false);
+    expect(placesCompatible("Togo", "Richmond Heights, OH")).toBe(false);
   });
 
   it("detects African search intents", () => {
