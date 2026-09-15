@@ -56,7 +56,10 @@ Les pages `/search`, `/jobs`, `/dashboard` tapent la base. **SQLite (`file:./dev
    - `RODIUMAI_MODEL=rodiumai/smart`
    - `NEXT_PUBLIC_APP_URL=https://<votre-domaine>`
    - `CRON_SECRET` (optionnel mais recommandé) : le cron Vercel envoie `Authorization: Bearer $CRON_SECRET`
-4. Dans le dashboard Clerk : ajouter `https://job-radar-six-ochre.vercel.app` (et le domaine custom) aux origins autorisées.
+4. **Clerk** : les clés sont dans Vercel, pas dans `.env.example`.
+   - Ajoute `https://job-radar-six-ochre.vercel.app` aux **Allowed origins / Redirect URLs**.
+   - **Ne configure pas** `clerk.job-radar-six-ochre.vercel.app` comme Frontend API : ce sous-domaine n’a pas de certificat HTTPS (tu ne contrôles pas `*.vercel.app`). Le widget reste alors sur « Chargement ».
+   - Tant que tu n’as pas de domaine custom + CNAME Clerk : utilise une instance **Development** (`pk_test_` / `sk_test_`, Frontend API `*.clerk.accounts.dev`) dans les env Vercel, puis redéploie.
 5. **Redéployer** après chaque changement d'env.
 
 Le build exécute `prisma migrate deploy` (sans seed) si `DATABASE_URL` est Postgres. Si la base est indisponible, le site reste lisible et vide : la recherche n’invente pas d’offres.
