@@ -197,7 +197,16 @@ export function OpportunityForm({ job }: { job?: JobRecord }) {
               <option value="lead">Lead</option>
             </select>
           </label>
-          <input type="hidden" name="experience" defaultValue={job?.experience ?? ""} />
+          <label className="text-sm md:col-span-2">
+            Experience (details)
+            <textarea
+              name="experience"
+              rows={3}
+              defaultValue={job?.experience ?? ""}
+              placeholder="Leave empty if not specified"
+              className="field mt-1 w-full rounded-xl px-3 py-2"
+            />
+          </label>
           <label className="text-sm">
             Salary min
             <input name="salaryMin" type="number" defaultValue={job?.salaryMin ?? ""} className="field mt-1 w-full rounded-xl px-3 py-2" />

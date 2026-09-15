@@ -115,7 +115,10 @@ async function upsertAppUser(input: {
 }
 
 export async function getDemoUser(): Promise<AppUser> {
-  const role = roleFor({ email: "demo@jobradar.local", clerkUserId: DEMO_CLERK_ID });
+  const role = roleFor({
+    verifiedEmails: ["demo@jobradar.local"],
+    clerkUserId: DEMO_CLERK_ID,
+  });
   try {
     return await withTimeout(
       upsertAppUser({

@@ -177,6 +177,16 @@ export default async function JobDetailPage({
             </div>
           ))}
         </section>
+        {match.matchedSkills.length ? (
+          <section className="panel p-6">
+            <h3 className="font-semibold">Matching skills</h3>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {match.matchedSkills.map((skill) => (
+                <Pill key={skill}>{skill}</Pill>
+              ))}
+            </div>
+          </section>
+        ) : null}
         {match.gaps.length ? (
           <section className="panel p-6">
             <h3 className="font-semibold">Missing skills</h3>

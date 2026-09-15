@@ -118,11 +118,8 @@ export function isConfiguredAdmin(input: {
   verifiedEmails?: string[];
   clerkUserId?: string | null;
 }): boolean {
-  const emails = [
-    ...(input.verifiedEmails ?? []),
-    ...(input.email ? [input.email] : []),
-  ];
-  if (emails.some((value) => isAdminEmail(value))) return true;
+  const verified = input.verifiedEmails ?? [];
+  if (verified.some((value) => isAdminEmail(value))) return true;
   const ids = adminClerkIds();
   return Boolean(input.clerkUserId && ids.includes(input.clerkUserId));
 }

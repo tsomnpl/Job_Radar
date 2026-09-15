@@ -1,6 +1,6 @@
 import { logDbError } from "@/lib/db";
 import { isPublicBoardSource, isVerifiedOpportunity, toJobRecord } from "@/lib/jobs";
-import { isPubliclyListed } from "@/lib/job-lifecycle";
+import { isExcludedFromSearch, isPubliclyListed } from "@/lib/job-lifecycle";
 import { prisma } from "@/lib/prisma";
 import type { JobRecord } from "@/lib/types";
 import type { NormalizedJobInput } from "@/lib/import-jobs";
@@ -145,6 +145,7 @@ export async function listSearchableJobs(): Promise<JobRecord[]> {
   for (const job of published) merged.set(job.id, job);
   for (const job of memoryJobs.values()) {
     if (!isStockJob(job)) continue;
+    if (isExcludedFromSearch(job)) continue;
     if (!merged.has(job.id)) merged.set(job.id, job);
   }
   return [...merged.values()];

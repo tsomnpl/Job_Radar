@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDeadline, isExpiredJob, jobLifecycle, isPubliclyListed } from "./job-lifecycle";
+import { formatDeadline, isExpiredJob, jobLifecycle, isPubliclyListed, isExcludedFromSearch } from "./job-lifecycle";
 
 describe("job lifecycle", () => {
   it("formats a deadline in English long form", () => {
@@ -23,5 +23,8 @@ describe("job lifecycle", () => {
         deadline: new Date("2026-09-10T12:00:00Z"),
       }),
     ).toBe(false);
+    expect(isExcludedFromSearch({ status: "unpublished" })).toBe(true);
+    expect(isExcludedFromSearch({ status: "pending", deadline: null }, now)).toBe(false);
+    expect(isExcludedFromSearch({ status: "pending", deadline: new Date("2026-09-10T12:00:00Z") }, now)).toBe(true);
   });
 });

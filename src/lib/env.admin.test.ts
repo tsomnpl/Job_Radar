@@ -40,4 +40,11 @@ describe("admin access is fail-closed", () => {
     process.env.ADMIN_CLERK_USER_IDS = "";
     expect(isConfiguredAdmin({ clerkUserId: "user_abc" })).toBe(false);
   });
+
+  it("ignores an unverified primary email even if it matches ADMIN_EMAIL", () => {
+    process.env.ADMIN_EMAIL = "owner@jobradar.app";
+    delete process.env.ADMIN_CLERK_USER_IDS;
+    expect(isConfiguredAdmin({ email: "owner@jobradar.app" })).toBe(false);
+    expect(isConfiguredAdmin({ verifiedEmails: ["owner@jobradar.app"] })).toBe(true);
+  });
 });

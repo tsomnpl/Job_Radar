@@ -13,16 +13,18 @@ export const dynamic = "force-dynamic";
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; q?: string }>;
+  searchParams: Promise<{ tab?: string; q?: string; type?: string }>;
 }) {
   const admin = await getAdminOrNull();
   if (!admin) return null;
-  const { tab = "overview", q = "" } = await searchParams;
+  const { tab = "overview", q = "", type = "" } = await searchParams;
   const jobs = await withTimeout(listAllJobs(), 2500, []);
   const query = q.trim().toLowerCase();
+  const typeFilter = type.trim();
   const filtered = jobs.filter((job) => {
-    if (!query) return true;
-    return `${job.title} ${job.company} ${job.location}`.toLowerCase().includes(query);
+    if (query && !`${job.title} ${job.company} ${job.location}`.toLowerCase().includes(query)) return false;
+    if (typeFilter && job.contractType !== typeFilter) return false;
+    return true;
   });
   const pending = filtered.filter((job) => job.status === "pending");
   const published = filtered.filter((job) => job.status === "published");
@@ -76,7 +78,7 @@ export default async function AdminPage({
 
       {tab === "opportunities" || tab === "pending" || tab === "published" ? (
         <section className="panel overflow-x-auto p-6">
-          <form className="mb-4">
+          <form className="mb-4 flex flex-wrap gap-3">
             <input type="hidden" name="tab" value={tab} />
             <input
               name="q"
@@ -84,6 +86,19 @@ export default async function AdminPage({
               placeholder="Search title, company, location"
               className="field w-full max-w-md rounded-xl px-3 py-2 text-sm"
             />
+            <select name="type" defaultValue={type} className="field rounded-xl px-3 py-2 text-sm">
+              <option value="">All types</option>
+              <option value="internship">Internship</option>
+              <option value="employee">Job / Employee</option>
+              <option value="consultant">Consultant</option>
+              <option value="freelance">Freelance</option>
+              <option value="mission">Mission</option>
+              <option value="apprenticeship">Apprenticeship</option>
+              <option value="other">Other</option>
+            </select>
+            <button type="submit" className="rounded-xl border border-line px-3 py-2 text-sm">
+              Filter
+            </button>
           </form>
           <OpportunityTable
             jobs={tab === "pending" ? pending : tab === "published" ? published : filtered}

@@ -272,6 +272,7 @@ export function explainMatch(job: JobRecord, candidate: CandidateSnapshot, now =
   return {
     score,
     reasons,
+    matchedSkills: skills.matched,
     gaps: skills.missing,
     highlights,
   };

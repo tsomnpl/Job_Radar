@@ -56,6 +56,7 @@ describe("explainMatch", () => {
       true,
     );
     expect(match.gaps).not.toContain("sql");
+    expect(match.matchedSkills).toEqual(expect.arrayContaining(["sql", "excel", "data"]));
   });
 
   it("penalizes onsite vs remote preference and missing skills", () => {

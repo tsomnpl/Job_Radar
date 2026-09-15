@@ -50,7 +50,11 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       startDate: input.startDate,
       endDate: input.endDate,
     });
-    const status = input.publishNow ? "published" : existing.status;
+    const status = input.publishNow
+      ? "published"
+      : existing.status === "published"
+        ? "unpublished"
+        : existing.status;
     const job = await prisma.job.update({
       where: { id },
       data: { ...normalized, status, active: status === "published" },

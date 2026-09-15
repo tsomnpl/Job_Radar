@@ -53,6 +53,7 @@ export type MatchReason = {
 export type MatchExplanation = {
   score: number;
   reasons: MatchReason[];
+  matchedSkills: string[];
   gaps: string[];
   highlights: string[];
 };

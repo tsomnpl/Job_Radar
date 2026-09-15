@@ -56,3 +56,15 @@ export function isPubliclyListed(job: {
   if (job.active === false) return false;
   return !isExpiredJob(job.deadline);
 }
+
+/** Live search may include pending public-board hits; never unpublished or expired. */
+export function isExcludedFromSearch(
+  job: {
+    status?: string | null;
+    deadline?: Date | string | null;
+  },
+  now = new Date(),
+): boolean {
+  if (job.status === "unpublished" || job.status === "expired") return true;
+  return isExpiredJob(job.deadline, now);
+}
