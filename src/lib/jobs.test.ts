@@ -22,6 +22,8 @@ describe("verified opportunities", () => {
     expect(isVerifiedOpportunity({ source: "ai-proposal" })).toBe(false);
     expect(isVerifiedOpportunity({ source: "manual" })).toBe(true);
     expect(isVerifiedOpportunity({ source: "extract" })).toBe(true);
+    expect(isVerifiedOpportunity({ source: "jobicy" })).toBe(true);
+    expect(isVerifiedOpportunity({ source: "remoteok" })).toBe(true);
   });
 
   it("drops invented and weak matches from search results", () => {
@@ -29,8 +31,9 @@ describe("verified opportunities", () => {
       { source: "ai-proposal", match: { score: 97 } },
       { source: "manual", match: { score: 40 } },
       { source: "extract", match: { score: 80 } },
+      { source: "jobicy", match: { score: 70 } },
     ];
-    expect(selectVerifiedMatches(rows).map((row) => row.source)).toEqual(["extract"]);
+    expect(selectVerifiedMatches(rows).map((row) => row.source)).toEqual(["extract", "jobicy"]);
   });
 });
 

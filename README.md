@@ -13,13 +13,14 @@ Produit indépendant. **Ne pas mélanger avec FlyerMint / `1st_SaaS`.**
 - CV → profil structuré
 - Dashboard (recherches, matches, radar)
 - Import admin CSV / JSON
+- Collecte d’offres **réelles** (Jobicy, Remote OK, Remotive) + cron quotidien
 
 ## Stack
 
 - Next.js 16 (App Router) + TypeScript + Tailwind CSS 4
 - Clerk
-- Prisma + **PostgreSQL** (stock vide tant que vous n'importez pas)
-- RodiumAI (`POST /v1/chat/completions`)
+- Prisma + **PostgreSQL** (stock vide au départ, puis APIs publiques + import admin)
+- RodiumAI (`POST /v1/chat/completions`) — parse l’intention, jamais une offre inventée
 - Vitest
 
 ## Setup local
@@ -36,7 +37,7 @@ Ouvrir [http://localhost:3000](http://localhost:3000).
 
 Le site démarre **vide** (0 offre, profil vide). `npm run db:seed` est optionnel si vous voulez un échantillon.
 
-Sans Postgres, `npm run dev` démarre quand même : dashboard / CV / offres à 0 ; une recherche sans stock affiche *No matching opportunities found* (pas d’offres inventées). CV persisté, sauvegardes et import admin exigent Postgres.
+Sans Postgres, `npm run dev` démarre quand même : dashboard / CV à 0 ; une recherche interroge les APIs publiques et n’affiche que des offres réelles (sinon *No matching opportunities found*). CV persisté, sauvegardes et import admin exigent Postgres.
 
 ## Vercel / production
 
@@ -53,12 +54,13 @@ Les pages `/search`, `/jobs`, `/dashboard` tapent la base. **SQLite (`file:./dev
    - `RODIUMAI_BASE_URL=https://api.rodiumai.io/v1`
    - `RODIUMAI_MODEL=rodiumai/smart`
    - `NEXT_PUBLIC_APP_URL=https://<votre-domaine>`
+   - `CRON_SECRET` (optionnel mais recommandé) : le cron Vercel envoie `Authorization: Bearer $CRON_SECRET`
 4. Dans le dashboard Clerk : ajouter `https://job-radar-six-ochre.vercel.app` (et le domaine custom) aux origins autorisées.
 5. **Redéployer** après chaque changement d'env.
 
 Le build exécute `prisma migrate deploy` (sans seed) si `DATABASE_URL` est Postgres. Si la base est indisponible, le site reste lisible et vide : la recherche n’invente pas d’offres.
 
-Voir `docs/FONCTIONNEMENT.md` pour le parcours produit (compte vide, import admin, pistes IA).
+Voir `docs/FONCTIONNEMENT.md` pour le parcours produit (compte, collecte publique, import admin). Jamais d’offres inventées.
 
 ## Variables
 
@@ -69,6 +71,7 @@ Voir `docs/FONCTIONNEMENT.md` pour le parcours produit (compte vide, import admi
 | `RODIUMAI_BASE_URL` | `https://api.rodiumai.io/v1` |
 | `ADMIN_CLERK_USER_IDS` | IDs Clerk admin (import) |
 | `DATABASE_URL` | `postgresql://…` obligatoire en production |
+| `CRON_SECRET` | Auth du cron `/api/cron/radar` (quotidien 06:00 UTC) |
 
 Ne jamais committer ni afficher les secrets (`sk_`, `rd_sk_`).
 

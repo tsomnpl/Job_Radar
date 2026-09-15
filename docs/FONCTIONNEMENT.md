@@ -10,7 +10,7 @@ Tagline : *Your next opportunity, before you miss it.*
 
 Stack : Next.js 16 (App Router) · Clerk · Prisma / PostgreSQL · RodiumAI (`POST https://api.rodiumai.io/v1/chat/completions`) · Tailwind.
 
-Repo GitHub : `tsomnpl/Job_Radar`. Branche de travail actuelle : `cursor/jobradar-vercel-db-2d46` (PR #3).
+Repo GitHub : `tsomnpl/Job_Radar`. Production : `https://job-radar-six-ochre.vercel.app`.
 
 ## 2. Compte (Clerk)
 
@@ -27,12 +27,14 @@ Dans Clerk : autoriser le domaine Vercel (`job-radar-six-ochre.vercel.app`).
 ## 3. Données : tout part de zéro
 
 - **Plus de 20 offres seed** au démarrage. `prepare-db` fait seulement `prisma migrate deploy`.
-- Une migration **dépublie** les offres `source = seed` déjà en base (si un deploy précédent les avait injectées).
+- Une migration **dépublie** les offres `source = seed` et `source = ai-proposal` déjà en base.
 - `npm run db:seed` existe encore **si vous voulez** recharger un échantillon, ce n’est **pas** automatique.
-- Dashboard / Offres / Landing affichent **0** tant que personne n’importe. Les pistes IA d’une recherche **ne remplissent pas** `/jobs`.
-- **Vous** remplissez :
-  - **CV / profil** : headline, compétences, lieux, séniorité, ou collage de CV.
-  - **Admin** : coller une annonce brute (IA extraie) ou CSV/JSON, publier / dépublier.
+- Dashboard / Offres / Landing affichent **0** tant qu’aucune offre réelle n’est collectée ou importée.
+- **Sources réelles** :
+  - Recherche : Jobicy, Remote OK, Remotive (APIs publiques). Seules les offres avec titre, entreprise, description et URL `http(s)` officielle sont gardées.
+  - Cron quotidien `GET /api/cron/radar` (06:00 UTC) pour alimenter le stock.
+  - **Admin** : coller une annonce brute (IA extraie depuis le texte) ou CSV/JSON.
+- Rodium **n’invente jamais** une offre. Il parse l’intention / le CV / un texte déjà fourni.
 
 Postgres obligatoire pour **persister**. `DATABASE_URL` = `postgres://…` **sans crochets `[]`**.  
 L’app accepte aussi `Job_POSTGRES_URL` / `POSTGRES_URL` et retire les `["…"]`.
@@ -44,12 +46,13 @@ SQLite `file:./dev.db` **ne marche pas** sur Vercel.
 Page `/search?q=…` :
 
 1. **Intention** (`src/server/search.ts`) : RodiumAI parse la phrase (lieu, contrat, skills). Sinon parseur déterministe (`src/lib/intent.ts`).
-2. **Matching** (`src/lib/matching.ts`) contre le **stock importé vérifié** uniquement :  
+2. **Collecte** en parallèle (`src/server/collect.ts`) : Jobicy, Remote OK, Remotive. Timeout 7 s. Filtre de pertinence + URL officielle obligatoire. Rien n’est fabriqué si les APIs sont vides ou hors sujet.
+3. **Matching** (`src/lib/matching.ts`) contre le **stock vérifié** uniquement :  
    skills 35 % · requête 20 % · lieu 15 % · séniorité 10 % · remote 10 % · langue 5 % · fraîcheur 5 %.  
-   Score + raisons + écarts (explicable).
-3. **Si aucune offre vérifiée n’atteint un score ≥ 55** : **aucun résultat inventé.** Message : *No matching opportunities found.* JobRadar ne fabrique pas d’offre, d’entreprise, ni d’URL.
-4. **Postuler** ouvre uniquement une URL `http(s)` provenant de la source. Pas connecté → *Sign in to continue*. Sans URL → *Not specified*, bouton Apply désactivé.
-5. La recherche est mémorisée (`Search` + `Match`) si l’utilisateur est persisté.
+   Score + raisons + écarts (explicable). Une offre remote **restreinte** (ex. APAC/Europe) ne match **pas** une recherche Togo.
+4. **Si aucune offre vérifiée n’atteint un score ≥ 55** : **aucun résultat inventé.** Message : *No matching opportunities found.* JobRadar ne fabrique pas d’offre, d’entreprise, ni d’URL.
+5. **Postuler** ouvre uniquement une URL `http(s)` provenant de la source. Pas connecté → *Sign in to continue*. Sans URL → *Not specified*, bouton Apply désactivé.
+6. La recherche est mémorisée (`Search` + `Match`) si l’utilisateur est persisté.
 
 ## 5. Pages
 
@@ -83,9 +86,9 @@ Pas de Money Fusion. Pas de crawl 24 h / CAPTCHA / LinkedIn-only.
 2. Ouvrir le site : landing blanche, **0 offre**.
 3. **Créer un compte** Clerk → dashboard **vide** (c’est voulu).
 4. Remplir le profil ou coller un CV.
-5. **Admin** : coller des vraies offres (ou CSV). Elles apparaissent dans `/jobs`.
+5. **Admin** (optionnel) : coller des offres CSV/JSON. La recherche alimente aussi le stock depuis Jobicy / Remote OK / Remotive.
 6. **Recherche** : « stage data remote Lomé ».
-   - S’il y a des offres importées qui matchent (score ≥ 55) → elles s’affichent avec score et source.
+   - Collecte les boards publics, puis match (score ≥ 55) → vraies offres + URL officielle.
    - Sinon → *No matching opportunities found.* (aucune fausse offre).
 7. Sur une fiche : sauver / **Apply** vers le site officiel si une URL http(s) existe.
 
@@ -94,12 +97,13 @@ Pas de Money Fusion. Pas de crawl 24 h / CAPTCHA / LinkedIn-only.
 - Auth : `src/lib/auth.ts`, `src/proxy.ts`
 - Matching : `src/lib/matching.ts`
 - Stock : `src/server/jobs-store.ts`
+- Collecte publique : `src/server/collect.ts`, `src/server/public-sources.ts`
 - Apply officiel : `src/components/apply-official-button.tsx`
 - Rodium : `src/server/rodium.ts`
 - Prisma : `prisma/schema.prisma`
 
 ## 9. Ce qui n’est pas encore dans le code
 
-- Collecte automatique 24 h (ONG, ONU, RSS) — l’admin importe encore les offres
 - Emails de notification
 - Scraping LinkedIn (volontairement interdit)
+- ReliefWeb jobs API (410 Gone — non utilisé)

@@ -3,10 +3,13 @@ import { SearchBox } from "@/components/search-box";
 import { EmptyResults } from "@/components/empty-results";
 import { Pill } from "@/components/brand";
 import { getSessionUser } from "@/lib/auth";
+import { parseIntentHeuristic } from "@/lib/intent";
+import { collectPublicOpportunitiesForIntent, PUBLIC_BOARD_LABELS } from "@/server/collect";
 import { persistSearch, rankJobsForUser } from "@/server/rank";
 import { resolveIntent } from "@/server/search";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
 export default async function SearchPage({
   searchParams,
@@ -26,7 +29,11 @@ export default async function SearchPage({
   }
 
   const user = await getSessionUser();
-  const intent = await resolveIntent(query);
+  const heuristic = parseIntentHeuristic(query);
+  const [intent] = await Promise.all([
+    resolveIntent(query),
+    collectPublicOpportunitiesForIntent(heuristic),
+  ]);
   const ranked = await rankJobsForUser({ intent, userId: user?.id });
   await persistSearch({ user, intent, ranked });
 
@@ -59,7 +66,7 @@ export default async function SearchPage({
           </div>
         </section>
       ) : (
-        <EmptyResults />
+        <EmptyResults sources={PUBLIC_BOARD_LABELS} />
       )}
     </div>
   );
