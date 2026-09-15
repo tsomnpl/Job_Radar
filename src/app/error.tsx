@@ -16,7 +16,7 @@ export default function ErrorPage({
 
   return (
     <div className="panel mx-auto max-w-lg p-8 text-center">
-      <h1 className="text-2xl font-semibold">Cette page n&apos;a pas pu charger</h1>
+      <h1 className="text-2xl font-semibold">Something went wrong while searching for opportunities.</h1>
       <p className="mt-3 text-muted">Réessayez, ou revenez à l&apos;accueil du radar.</p>
       <div className="mt-6 flex justify-center gap-4">
         <button type="button" onClick={reset} className="btn-primary rounded-full px-4 py-2 text-sm font-semibold">

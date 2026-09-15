@@ -32,7 +32,7 @@ export function SearchBox({
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="What opportunity are you looking for?"
+          placeholder="Je cherche un stage en cybersécurité au Togo ou à distance…"
           className={`w-full min-w-0 bg-transparent px-3 outline-none placeholder:text-muted ${
             size === "lg" ? "h-12 text-base" : "h-10 text-sm"
           }`}
@@ -42,7 +42,7 @@ export function SearchBox({
           disabled={pending}
           className="btn-primary w-full shrink-0 rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-60 sm:w-auto"
         >
-          {pending ? "Searching..." : "Search Opportunities"}
+          {pending ? "Analyzing your request..." : "Search Opportunities"}
         </button>
       </div>
     </form>

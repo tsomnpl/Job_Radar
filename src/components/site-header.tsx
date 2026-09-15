@@ -45,6 +45,14 @@ export function SiteHeader({
           ))}
         </nav>
         <div className="flex items-center gap-3 text-sm">
+          <button
+            type="button"
+            className="hidden rounded-lg border border-line px-2 py-1 text-xs text-muted md:inline"
+            onClick={() => window.dispatchEvent(new Event("jobradar-command"))}
+            aria-label="Open command search"
+          >
+            ⌘K
+          </button>
           <ThemeToggle />
           <HeaderAuth clerkEnabled={clerkEnabled} />
           <button

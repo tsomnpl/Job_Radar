@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { isPersistedUser, requireUser } from "@/lib/auth";
 import { logDbError } from "@/lib/db";
-import { parseSeniority, parseSkillList } from "@/lib/normalize";
+import { parseRemoteType, parseSeniority, parseSkillList } from "@/lib/normalize";
 import { prisma } from "@/lib/prisma";
 import { deleteAccountDataForUser, deleteProfileForUser, accountDeleteScope } from "@/server/account";
 
@@ -13,15 +13,17 @@ export async function POST(request: Request) {
       skills?: string;
       locations?: string;
       seniority?: string;
+      remotePreference?: string;
     } | null;
 
     const headline = body?.headline?.trim() || null;
     const skills = parseSkillList(body?.skills ?? "");
     const locations = parseSkillList(body?.locations ?? "");
     const seniority = parseSeniority(body?.seniority ?? null);
+    const remotePreference = parseRemoteType(body?.remotePreference ?? null);
 
     if (!isPersistedUser(user)) {
-      return NextResponse.json({ persisted: false, profile: { headline, skills, locations, seniority } });
+      return NextResponse.json({ persisted: false, profile: { headline, skills, locations, seniority, remotePreference } });
     }
 
     const profile = await prisma.profile.upsert({
@@ -31,6 +33,7 @@ export async function POST(request: Request) {
         skillsJson: JSON.stringify(skills),
         locationsJson: JSON.stringify(locations),
         seniority,
+        remotePreference,
       },
       create: {
         userId: user.id,
@@ -38,6 +41,7 @@ export async function POST(request: Request) {
         skillsJson: JSON.stringify(skills),
         locationsJson: JSON.stringify(locations),
         seniority,
+        remotePreference,
       },
     });
 

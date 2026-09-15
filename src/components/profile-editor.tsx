@@ -22,6 +22,7 @@ export async function ProfileEditor() {
       initialSkills={asJsonArray(profile?.skillsJson).join(", ")}
       initialLocations={asJsonArray(profile?.locationsJson).join(", ")}
       initialSeniority={profile?.seniority ?? ""}
+      initialRemote={profile?.remotePreference ?? ""}
       hasProfile={Boolean(profile)}
     />
   );

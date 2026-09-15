@@ -8,12 +8,14 @@ export function ProfileQuickForm({
   initialSkills = "",
   initialLocations = "",
   initialSeniority = "",
+  initialRemote = "",
   hasProfile = false,
 }: {
   initialHeadline?: string;
   initialSkills?: string;
   initialLocations?: string;
   initialSeniority?: string;
+  initialRemote?: string;
   hasProfile?: boolean;
 }) {
   const router = useRouter();
@@ -21,6 +23,7 @@ export function ProfileQuickForm({
   const [skills, setSkills] = useState(initialSkills);
   const [locations, setLocations] = useState(initialLocations);
   const [seniority, setSeniority] = useState(initialSeniority);
+  const [remotePreference, setRemotePreference] = useState(initialRemote);
   const [status, setStatus] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -31,7 +34,7 @@ export function ProfileQuickForm({
     const response = await fetch("/api/profile", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ headline, skills, locations, seniority }),
+      body: JSON.stringify({ headline, skills, locations, seniority, remotePreference }),
     });
     setPending(false);
     if (!response.ok) {
@@ -60,6 +63,7 @@ export function ProfileQuickForm({
     setSkills("");
     setLocations("");
     setSeniority("");
+    setRemotePreference("");
     setStatus(scope === "account" ? "Données JobRadar supprimées." : "Profil supprimé.");
     router.refresh();
   }
@@ -90,6 +94,16 @@ export function ProfileQuickForm({
         placeholder="Séniorité — intern, junior, mid, senior"
         className="field w-full rounded-xl px-3 py-2 text-sm outline-none"
       />
+      <select
+        value={remotePreference}
+        onChange={(event) => setRemotePreference(event.target.value)}
+        className="field w-full rounded-xl px-3 py-2 text-sm outline-none"
+      >
+        <option value="">Remote preference — Not specified</option>
+        <option value="remote">Remote</option>
+        <option value="hybrid">Hybrid</option>
+        <option value="onsite">On-site</option>
+      </select>
       <div className="flex flex-wrap items-center gap-3">
         <button type="submit" disabled={pending} className="btn-primary rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-60">
           {pending ? "Enregistrement..." : "Enregistrer le profil"}

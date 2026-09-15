@@ -33,7 +33,7 @@ export function ApplyOfficialButton({
     return (
       <div className="panel space-y-3 p-4">
         <p className="font-semibold">Postuler</p>
-        <p className="text-sm text-muted">Connectez-vous ou créez un compte pour ouvrir le lien officiel de candidature.</p>
+        <p className="text-sm text-muted">Connectez-vous ou créez un compte JobRadar pour continuer.</p>
         <div className="flex flex-wrap gap-3">
           <Link
             href={`/sign-in?redirect_url=${encodeURIComponent(returnTo)}`}
@@ -77,7 +77,7 @@ export function ApplyOfficialButton({
         {pending ? "Opening…" : "Postuler maintenant"}
       </button>
       {applied ? (
-        <p className="text-xs text-muted">Statut : Postulé — vous avez ouvert le lien officiel. JobRadar ne confirme pas l&apos;envoi sur le site externe.</p>
+        <p className="text-xs text-muted">Marked as applied — you opened the official link. JobRadar did not submit the application for you.</p>
       ) : null}
     </div>
   );

@@ -136,6 +136,7 @@ export type JobRecord = {
   endDate: Date | null;
   status: string;
   active?: boolean;
+  importedAt?: Date | null;
 };
 
 export type RankedJob = JobRecord & {

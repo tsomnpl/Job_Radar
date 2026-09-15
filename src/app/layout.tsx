@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SiteHeader } from "@/components/site-header";
+import { CommandPalette } from "@/components/command-palette";
 import { ThemeProvider } from "@/components/theme-provider";
 import { getSessionUser } from "@/lib/auth";
 import { clerkAppearance } from "@/lib/clerk-appearance";
@@ -33,6 +34,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const body = (
     <ThemeProvider>
       <SiteHeader clerkEnabled={clerkEnabled} signedIn={signedIn} isAdmin={user?.role === "ADMIN"} />
+      <CommandPalette signedIn={signedIn} />
       <main className="mx-auto min-h-[70vh] w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
       <footer className="border-t border-line px-4 py-6 text-center text-xs text-muted">
         JobRadar · Your next opportunity, before you miss it.

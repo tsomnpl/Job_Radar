@@ -10,6 +10,9 @@ import { requirePageUser } from "@/lib/page-guard";
 import { asJsonArray } from "@/lib/normalize";
 import { prisma } from "@/lib/prisma";
 import { parseIntentHeuristic } from "@/lib/intent";
+import { OpportunityRadar } from "@/components/opportunity-radar";
+import { OpportunityTimeline } from "@/components/opportunity-timeline";
+import { jobLifecycle } from "@/lib/job-lifecycle";
 import { rankJobsForUser } from "@/server/rank";
 import { listStockJobs } from "@/server/jobs-store";
 import { withTimeout } from "@/lib/timeout";
@@ -21,16 +24,18 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-accent">Compte</p>
-        <h1 className="mt-2 text-3xl font-semibold">Votre radar</h1>
+        <p className="text-xs uppercase tracking-[0.2em] text-accent">Career Command Center</p>
+        <h1 className="mt-2 text-3xl font-semibold">My Radar</h1>
         <p className="mt-2 text-muted">
-          Profil, recherches, offres sauvegardées, candidatures et matchs.
+          Préférences, opportunités recommandées, sauvegardes, candidatures et CV.
         </p>
       </div>
 
       <section className="panel p-6">
-        <h2 className="font-semibold">Mon profil (à remplir)</h2>
-        <p className="mt-2 text-sm text-muted">Sans ça, le matching n&apos;a pas de compétences à comparer.</p>
+        <h2 className="font-semibold">My Radar</h2>
+        <p className="mt-2 text-sm text-muted">
+          Domaines, type, localisation, remote, niveau et compétences. Sans ça : Your radar is not configured yet.
+        </p>
         <div className="mt-4">
           <ProfileEditor />
         </div>
@@ -132,6 +137,7 @@ async function DashboardData() {
     : [];
 
   const alerts = ranked.filter((job) => job.match.score >= 70).slice(0, 4);
+  const closing = stock.filter((job) => jobLifecycle(job.deadline) === "closing_soon");
   const skills = asJsonArray(profile?.skillsJson);
   const empty =
     stock.length === 0 && saved.length === 0 && searches.length === 0 && !profile?.cvText && skills.length === 0;
@@ -190,9 +196,35 @@ async function DashboardData() {
         </article>
       </section>
 
+      <OpportunityRadar jobs={ranked} />
+      <OpportunityTimeline
+        jobs={stock.slice(0, 20).map((job) => ({
+          id: job.id,
+          title: job.title,
+          company: job.company,
+          postedAt: job.postedAt,
+        }))}
+      />
+      <section className="panel p-6">
+        <h2 className="font-semibold">Closing soon</h2>
+        {closing.length ? (
+          <ul className="mt-3 space-y-2 text-sm">
+            {closing.slice(0, 6).map((job) => (
+              <li key={job.id}>
+                <Link href={`/jobs/${job.id}`} className="hover:text-accent">
+                  {job.company} — {job.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-3 text-sm text-muted">No matching opportunities found.</p>
+        )}
+      </section>
+
       <section className="panel p-6">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold">Meilleur match</h2>
+          <h2 className="font-semibold">Recommended opportunities</h2>
           <Link href="/search" className="text-sm text-accent">
             Rechercher
           </Link>
@@ -232,7 +264,7 @@ async function DashboardData() {
                 company: item.job.company,
                 status: item.status,
               }))}
-              empty="0 — aucune sauvegarde."
+              empty="No saved opportunities yet."
             />
           </div>
         </section>
@@ -253,7 +285,7 @@ async function DashboardData() {
                 status: item.status,
                 date: item.createdAt.toISOString().slice(0, 10),
               }))}
-              empty="0 — aucune candidature."
+              empty="No applications tracked yet."
             />
           </div>
         </section>

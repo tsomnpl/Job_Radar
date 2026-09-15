@@ -1,5 +1,5 @@
 import { asJsonArray } from "@/lib/normalize";
-import { formatDeadline, jobLifecycle, LIFECYCLE_LABELS } from "@/lib/job-lifecycle";
+import { formatClosesIn, formatDeadline, jobLifecycle, LIFECYCLE_LABELS } from "@/lib/job-lifecycle";
 import type { JobRecord } from "@/lib/types";
 
 export function toJobRecord(job: {
@@ -34,6 +34,7 @@ export function toJobRecord(job: {
   endDate?: Date | null;
   status?: string | null;
   active?: boolean;
+  importedAt?: Date | null;
 }): JobRecord {
   return {
     id: job.id,
@@ -67,6 +68,7 @@ export function toJobRecord(job: {
     endDate: job.endDate ?? null,
     status: job.status ?? (job.active === false ? "unpublished" : "published"),
     active: job.active ?? true,
+    importedAt: job.importedAt ?? null,
   };
 }
 
@@ -173,6 +175,10 @@ export function formatJobDeadline(deadline?: Date | string | null): string {
 
 export function formatLifecycle(deadline?: Date | string | null): string {
   return LIFECYCLE_LABELS[jobLifecycle(deadline)];
+}
+
+export function formatClosesLabel(deadline?: Date | string | null): string {
+  return formatClosesIn(deadline);
 }
 
 export function applicationStatusLabel(status: string): string {

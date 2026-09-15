@@ -1,8 +1,8 @@
 import { JobCard } from "@/components/job-card";
 import { SearchBox } from "@/components/search-box";
 import { SearchFiltersForm } from "@/components/search-filters";
+import { IntentCriteria } from "@/components/intent-criteria";
 import { EmptyResults } from "@/components/empty-results";
-import { Pill } from "@/components/brand";
 import { parseIntentHeuristic } from "@/lib/intent";
 import { applySearchFilters, readSearchFilters } from "@/lib/search-filters";
 import { collectPublicOpportunitiesForIntent, PUBLIC_BOARD_LABELS } from "@/server/collect";
@@ -48,7 +48,7 @@ export default async function SearchPage({
         <SearchBox initialQuery={query} size="md" />
         <SearchFiltersForm query={query} filters={filters} />
       </div>
-      <Suspense fallback={<PageSkeleton title="Recherche en cours…" />}>
+      <Suspense fallback={<PageSkeleton title="Searching opportunities…" />}>
         <SearchResults query={query || "opportunités"} filters={filters} />
       </Suspense>
     </div>
@@ -66,24 +66,7 @@ async function SearchResults({ query, filters }: { query: string; filters: Searc
 
   return (
     <>
-      <section className="panel p-5">
-        <p className="text-xs uppercase tracking-[0.18em] text-accent">
-          Intention extraite ({intent.source === "rodium" ? "RodiumAI" : "déterministe"})
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {intent.location ? <Pill>{intent.location}</Pill> : null}
-          {intent.country ? <Pill>{intent.country}</Pill> : null}
-          {intent.remoteType ? <Pill>{intent.remoteType}</Pill> : null}
-          {intent.seniority ? <Pill>{intent.seniority}</Pill> : null}
-          {intent.contractType ? <Pill>{intent.contractType}</Pill> : null}
-          {intent.skills.map((skill) => (
-            <Pill key={skill}>{skill}</Pill>
-          ))}
-          {!intent.location && !intent.skills.length && !intent.contractType ? (
-            <Pill>{query}</Pill>
-          ) : null}
-        </div>
-      </section>
+      <IntentCriteria intent={intent} />
 
       {ranked.length ? (
         <section className="space-y-4">

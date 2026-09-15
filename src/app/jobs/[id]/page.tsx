@@ -1,8 +1,13 @@
 import { notFound } from "next/navigation";
-import { Pill, ScoreRing } from "@/components/brand";
+import { Pill } from "@/components/brand";
 import { ApplyOfficialButton } from "@/components/apply-official-button";
 import { CompanyLogo } from "@/components/company-logo";
 import { CoverLetterPanel } from "@/components/cover-letter-panel";
+import { DeadlineBadge } from "@/components/deadline-badge";
+import { MatchWhy } from "@/components/match-why";
+import { OpportunityCopilot } from "@/components/opportunity-copilot";
+import { OpportunityDna } from "@/components/opportunity-dna";
+import { OpportunityVerification } from "@/components/opportunity-verification";
 import { SaveJobButton } from "@/components/save-job-button";
 import { getSessionUser, isPersistedUser } from "@/lib/auth";
 import { withDb } from "@/lib/db";
@@ -12,7 +17,6 @@ import {
   formatContract,
   formatDuration,
   formatJobDeadline,
-  formatLifecycle,
   formatOpportunityType,
   formatRemote,
   formatSalary,
@@ -74,11 +78,13 @@ export default async function JobDetailPage({
           <Pill>{formatOpportunityType(job.contractType)}</Pill>
           <Pill>{formatContract(job.contractType)}</Pill>
           <Pill>Duration: {formatDuration(job.duration)}</Pill>
-          <Pill>Deadline: {formatJobDeadline(job.deadline)}</Pill>
-          <Pill>{formatLifecycle(job.deadline)}</Pill>
           <Pill>{formatRemote(job.remoteType)}</Pill>
           <Pill>{formatSeniority(job.seniority)}</Pill>
+          <DeadlineBadge deadline={job.deadline} />
           <Pill>{salary ?? displayField(null)}</Pill>
+        </div>
+        <div className="mt-6">
+          <OpportunityDna job={job} />
         </div>
         <dl className="mt-6 grid gap-2 text-sm">
           <div className="flex gap-2">
@@ -143,65 +149,19 @@ export default async function JobDetailPage({
             <p className="mt-2 whitespace-pre-wrap text-sm leading-7">{job.requirements}</p>
           </div>
         ) : null}
+        <div className="mt-6">
+          <OpportunityVerification job={job} />
+        </div>
       </article>
 
       <aside className="space-y-4">
-        <section className="panel p-6">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">Match</h2>
-            <ScoreRing score={match.score} />
-          </div>
-          <p className="mt-2 text-sm font-semibold">{match.score}% Match</p>
-          <p className="mt-4 text-sm text-muted">{narrative}</p>
-          <p className="mt-3 text-xs text-muted">Score déterministe. La lettre et l&apos;analyse CV peuvent utiliser RodiumAI.</p>
-        </section>
-        <section className="panel space-y-3 p-6">
-          <h3 className="font-semibold">Why you match</h3>
-          {match.reasons.map((reason) => (
-            <div key={reason.factor} className="border-b border-line pb-3 last:border-0 last:pb-0">
-              <div className="flex items-center justify-between text-sm">
-                <span>{reason.label}</span>
-                <span
-                  className={
-                    reason.polarity === "positive"
-                      ? "text-good"
-                      : reason.polarity === "negative"
-                        ? "text-danger"
-                        : "text-warn"
-                  }
-                >
-                  {reason.score}
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-muted">{reason.detail}</p>
-            </div>
-          ))}
-        </section>
-        {match.matchedSkills.length ? (
-          <section className="panel p-6">
-            <h3 className="font-semibold">Matching skills</h3>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {match.matchedSkills.map((skill) => (
-                <Pill key={skill}>{skill}</Pill>
-              ))}
-            </div>
-          </section>
-        ) : null}
-        {match.gaps.length ? (
-          <section className="panel p-6">
-            <h3 className="font-semibold">Missing skills</h3>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {match.gaps.map((gap) => (
-                <Pill key={gap}>{gap}</Pill>
-              ))}
-            </div>
-          </section>
-        ) : null}
+        <MatchWhy match={match} narrative={narrative} />
         {user ? <CoverLetterPanel jobId={job.id} /> : (
           <section className="panel p-6 text-sm text-muted">
             Sign in to generate a cover letter for this verified offer.
           </section>
         )}
+        <OpportunityCopilot jobId={job.id} signedIn={signedIn} />
       </aside>
     </div>
   );

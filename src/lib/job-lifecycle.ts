@@ -43,6 +43,27 @@ export function formatDeadline(deadline: Date | string | null | undefined): stri
   }).format(date);
 }
 
+export function deadlineKind(
+  deadline: Date | string | null | undefined,
+  now = new Date(),
+): "unspecified" | JobLifecycle {
+  if (!parseOptionalDate(deadline)) return "unspecified";
+  return jobLifecycle(deadline, now);
+}
+
+/** Real deadline copy only. Never invents a close date. */
+export function formatClosesIn(deadline: Date | string | null | undefined, now = new Date()): string {
+  const date = parseOptionalDate(deadline);
+  if (!date) return `Deadline: ${NOT_SPECIFIED}`;
+  const life = jobLifecycle(date, now);
+  if (life === "expired") return "Expired";
+  const days = Math.ceil((date.getTime() - now.getTime()) / 86_400_000);
+  if (days <= 0) return "Expired";
+  if (days === 1) return "Closes in 1 day";
+  if (days <= 14) return `Closes in ${days} days`;
+  return `Deadline: ${formatDeadline(date)}`;
+}
+
 export function formatDateField(value: Date | string | null | undefined): string {
   return formatDeadline(value);
 }

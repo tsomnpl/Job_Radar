@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Pill, ScoreRing } from "@/components/brand";
 import { SearchBox } from "@/components/search-box";
+import { OpportunityRadar } from "@/components/opportunity-radar";
+import { OpportunityTimeline } from "@/components/opportunity-timeline";
 import { formatOpportunityType } from "@/lib/jobs";
 import { isClerkConfigured } from "@/lib/env";
 import { parseIntentHeuristic } from "@/lib/intent";
@@ -49,6 +51,7 @@ export default function HomePage() {
               organisations internationales.
             </p>
             <SearchBox />
+            <p className="text-xs text-muted">Quick Match · langage naturel. Aucune offre inventée.</p>
             <div className="flex flex-wrap gap-2">
               {EXAMPLES.map((example) => (
                 <Link key={example} href={`/search?q=${encodeURIComponent(example)}`}>
@@ -171,35 +174,50 @@ async function HomeJobPreview() {
 
   if (!preview.length) {
     return (
-      <div className="panel space-y-3 p-6">
-        <p className="font-semibold">Aucune offre vérifiée en vitrine pour l&apos;instant</p>
-        <p className="text-sm text-muted">
-          JobRadar n&apos;invente pas d&apos;entreprise. Lancez une recherche pour des offres réelles, ou attendez
-          qu&apos;une opportunité publiée apparaisse.
-        </p>
-        <div className="flex flex-wrap gap-3 pt-1">
-          <Link href="/search" className="btn-primary rounded-full px-4 py-2 text-sm font-semibold">
-            Rechercher
-          </Link>
+      <div className="space-y-4">
+        <OpportunityRadar jobs={[]} />
+        <OpportunityTimeline jobs={[]} />
+        <div className="panel space-y-3 p-6">
+          <p className="font-semibold">Aucune offre vérifiée en vitrine pour l&apos;instant</p>
+          <p className="text-sm text-muted">
+            JobRadar n&apos;invente pas d&apos;entreprise. Lancez une recherche pour des offres réelles, ou attendez
+            qu&apos;une opportunité publiée apparaisse.
+          </p>
+          <div className="flex flex-wrap gap-3 pt-1">
+            <Link href="/search" className="btn-primary rounded-full px-4 py-2 text-sm font-semibold">
+              Rechercher
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="grid gap-4">
-      {preview.map((job) => (
-        <Link key={job.id} href={`/jobs/${job.id}`} className="panel flex items-center justify-between gap-4 p-5">
-          <div>
-            <p className="text-xs uppercase tracking-[0.16em] text-muted">{job.company}</p>
-            <h3 className="mt-1 font-semibold">{job.title}</h3>
-            <p className="mt-1 text-sm text-muted">
-              {job.location} · {formatOpportunityType(job.contractType)}
-            </p>
-          </div>
-          <ScoreRing score={job.match.score} />
-        </Link>
-      ))}
+    <div className="space-y-4">
+      <OpportunityRadar jobs={stock.slice(0, 24)} />
+      <OpportunityTimeline
+        jobs={stock.slice(0, 20).map((job) => ({
+          id: job.id,
+          title: job.title,
+          company: job.company,
+          postedAt: job.postedAt,
+        }))}
+      />
+      <div className="grid gap-4">
+        {preview.map((job) => (
+          <Link key={job.id} href={`/jobs/${job.id}`} className="panel panel-hover flex items-center justify-between gap-4 p-5">
+            <div>
+              <p className="text-xs uppercase tracking-[0.16em] text-muted">{job.company}</p>
+              <h3 className="mt-1 font-semibold">{job.title}</h3>
+              <p className="mt-1 text-sm text-muted">
+                {job.location} · {formatOpportunityType(job.contractType)}
+              </p>
+            </div>
+            <ScoreRing score={job.match.score} />
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }
