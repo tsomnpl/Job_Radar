@@ -18,8 +18,7 @@ export default function AdminPage() {
       <div>
         <h1 className="text-3xl font-semibold">Admin radar</h1>
         <p className="mt-2 text-muted">
-          Pilotage des opportunités. Mode {isClerkConfigured() ? "Clerk" : "démo"}. Les formulaires
-          s&apos;affichent même si Postgres ou Clerk ne répondent pas.
+          Pilotage des opportunités : import, publication, radar.
         </p>
       </div>
 

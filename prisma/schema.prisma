@@ -19,6 +19,7 @@ model User {
   searches    Search[]
   matches     Match[]
   savedJobs   SavedJob[]
+  lastAlertEmailAt DateTime?
 }
 
 model Profile {

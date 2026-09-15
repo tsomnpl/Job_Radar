@@ -9,5 +9,6 @@ export const clerkAppearance = {
   elements: {
     card: "shadow-none border border-[#d5e0f5]",
     formButtonPrimary: "bg-[#1A6DFF] hover:bg-[#1558d4]",
+    socialButtonsBlockButton: "border border-[#d5e0f5]",
   },
 };
