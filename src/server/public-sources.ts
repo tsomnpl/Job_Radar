@@ -2,7 +2,7 @@ import { stripHtml } from "@/lib/html";
 import { hasInternTitle, NOT_SPECIFIED, officialApplicationUrl } from "@/lib/jobs";
 import { isAfricanSearch, isUnrestrictedRemoteLocation, placesCompatible } from "@/lib/places";
 import { fold, parseContractType, parseSeniority, parseSkillList, tokenize, unique } from "@/lib/normalize";
-import { tokenMatchesHaystack } from "@/lib/synonyms";
+import { tokenMatchesJob } from "@/lib/synonyms";
 import type { ContractType, SearchIntent, Seniority } from "@/lib/types";
 
 export const PUBLIC_BOARDS = [
@@ -158,14 +158,17 @@ function finalize(input: {
   const sourceUrl = input.sourceUrl;
   if (!title || !company || !description || !sourceUrl) return null;
   const { contractType, seniority } = classifyRole(title, input.typeBlob ?? "", input.levelBlob ?? "");
+  const location = input.location.trim() || NOT_SPECIFIED;
+  const remoteBoards = input.source === "jobicy" || input.source === "remoteok" || input.source === "remotive" || input.source === "himalayas";
+  const remoteType = remoteBoards || isUnrestrictedRemoteLocation(location) ? "remote" : "onsite";
   return {
     id: `pub_${input.source}_${input.sourceId}`,
     source: input.source,
     title,
     company,
-    location: input.location.trim() || NOT_SPECIFIED,
+    location,
     country: input.country?.trim() || null,
-    remoteType: "remote",
+    remoteType,
     contractType,
     seniority,
     salaryMin: input.salaryMin ?? null,
@@ -363,8 +366,9 @@ export function isRelevantToIntent(job: PublicOpportunity, intent: SearchIntent)
   });
   if (tokens.length === 0) return internIntent(intent) ? isInternSignal(job) : true;
 
+  const titleFold = fold(job.title);
   const haystack = fold(`${job.title} ${job.company} ${job.skills.join(" ")} ${job.description}`);
-  const hits = tokens.filter((token) => tokenMatchesHaystack(token, haystack));
+  const hits = tokens.filter((token) => tokenMatchesJob(token, titleFold, haystack));
   const needed = tokens.length >= 4 ? 2 : 1;
   return hits.length >= needed;
 }
