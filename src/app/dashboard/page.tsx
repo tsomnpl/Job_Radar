@@ -76,8 +76,8 @@ export default async function DashboardPage() {
       {empty ? (
         <section className="panel space-y-4 p-6">
           <p className="text-sm text-muted">
-            Aucune offre en stock, aucun CV, aucune candidature. Remplissez votre profil, lancez une recherche (l&apos;IA
-            proposera des pistes s&apos;il n&apos;y a rien), ou importez des offres en admin.
+            Aucune offre vérifiée, aucun CV, aucune candidature. Remplissez votre profil, importez de vraies offres en
+            admin, ou lancez une recherche — s&apos;il n&apos;y a rien, JobRadar n&apos;inventera pas d&apos;offre.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link href="/cv" className="btn-primary rounded-full px-4 py-2 text-sm font-semibold">
@@ -142,7 +142,7 @@ export default async function DashboardPage() {
             <ScoreRing score={ranked[0].match.score} />
           </Link>
         ) : (
-          <p className="mt-3 text-sm text-muted">0 offre. Importez-en en admin, ou cherchez pour que l&apos;IA propose.</p>
+          <p className="mt-3 text-sm text-muted">No matching opportunities found. Import a verified offer in Admin.</p>
         )}
       </section>
 

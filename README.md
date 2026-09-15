@@ -36,7 +36,7 @@ Ouvrir [http://localhost:3000](http://localhost:3000).
 
 Le site démarre **vide** (0 offre, profil vide). `npm run db:seed` est optionnel si vous voulez un échantillon.
 
-Sans Postgres, `npm run dev` démarre quand même : dashboard / CV / offres à 0 ; une recherche propose des pistes IA heuristiques. CV persisté, sauvegardes et import admin exigent Postgres.
+Sans Postgres, `npm run dev` démarre quand même : dashboard / CV / offres à 0 ; une recherche sans stock affiche *No matching opportunities found* (pas d’offres inventées). CV persisté, sauvegardes et import admin exigent Postgres.
 
 ## Vercel / production
 
@@ -56,7 +56,7 @@ Les pages `/search`, `/jobs`, `/dashboard` tapent la base. **SQLite (`file:./dev
 4. Dans le dashboard Clerk : ajouter `https://job-radar-six-ochre.vercel.app` (et le domaine custom) aux origins autorisées.
 5. **Redéployer** après chaque changement d'env.
 
-Le build exécute `prisma migrate deploy` (sans seed) si `DATABASE_URL` est Postgres. Si la base est indisponible, le site reste lisible, vide, et la recherche propose des pistes IA.
+Le build exécute `prisma migrate deploy` (sans seed) si `DATABASE_URL` est Postgres. Si la base est indisponible, le site reste lisible et vide : la recherche n’invente pas d’offres.
 
 Voir `docs/FONCTIONNEMENT.md` pour le parcours produit (compte vide, import admin, pistes IA).
 

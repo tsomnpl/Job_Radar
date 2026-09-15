@@ -44,21 +44,19 @@ SQLite `file:./dev.db` **ne marche pas** sur Vercel.
 Page `/search?q=…` :
 
 1. **Intention** (`src/server/search.ts`) : RodiumAI parse la phrase (lieu, contrat, skills). Sinon parseur déterministe (`src/lib/intent.ts`).
-2. **Matching** (`src/lib/matching.ts`) contre le **stock importé** (`listStockJobs`, source ≠ `ai-proposal`) :  
+2. **Matching** (`src/lib/matching.ts`) contre le **stock importé vérifié** uniquement :  
    skills 35 % · requête 20 % · lieu 15 % · séniorité 10 % · remote 10 % · langue 5 % · fraîcheur 5 %.  
    Score + raisons + écarts (explicable).
-3. **Si le stock est vide OU moins de 3 offres à score ≥ 55** : l’IA **propose des pistes** (`src/server/propose.ts`).
-   - Avec `RODIUMAI_API_KEY` : 5 pistes JSON (titre, org, lieu, skills, description).
-   - Sans clé : 3 pistes heuristiques.
-   - Marquées `source = ai-proposal` / badge **Piste IA**. Ce **n’est pas** du scraping LinkedIn. Ce sont des pistes à sourcer, enregistrées (pour la fiche) si Postgres est là, **exclues du stock** `/jobs`.
-4. La recherche est mémorisée (`Search` + `Match`) si l’utilisateur est persisté.
+3. **Si aucune offre vérifiée n’atteint un score ≥ 55** : **aucun résultat inventé.** Message : *No matching opportunities found.* JobRadar ne fabrique pas d’offre, d’entreprise, ni d’URL.
+4. **Postuler** ouvre uniquement une URL `http(s)` provenant de la source. Pas connecté → *Sign in to continue*. Sans URL → *Not specified*, bouton Apply désactivé.
+5. La recherche est mémorisée (`Search` + `Match`) si l’utilisateur est persisté.
 
 ## 5. Pages
 
 | Page | Rôle |
 | --- | --- |
 | `/` | Landing logo + tagline + champ NL + CTA compte. 0 offre tant que le stock est vide. |
-| `/search` | Intention + stock + pistes IA si rien ne match. |
+| `/search` | Intention + offres vérifiées. Sinon : *No matching opportunities found.* Jamais d’offre inventée. |
 | `/jobs` | Liste du stock uniquement (0 si vide). |
 | `/jobs/[id]` | Fiche : type, durée, lieu, score, pourquoi, écarts, sauver, candidature, lettre IA. |
 | `/dashboard` | Compte : compteurs à 0, formulaire profil, puis matchs / sauvegardes / candidatures. |
@@ -74,8 +72,7 @@ Toujours **serveur** (`src/server/rodium.ts`) : header `Authorization: Bearer rd
 - Parse CV
 - Narratif de match
 - Extraction d’offre depuis texte brut (admin)
-- Pistes si le stock ne suffit pas
-- Lettre de motivation
+- Lettre de motivation (offre vérifiée)
 - Conseils d’optimisation CV
 
 Pas de Money Fusion. Pas de crawl 24 h / CAPTCHA / LinkedIn-only.
@@ -88,21 +85,21 @@ Pas de Money Fusion. Pas de crawl 24 h / CAPTCHA / LinkedIn-only.
 4. Remplir le profil ou coller un CV.
 5. **Admin** : coller des vraies offres (ou CSV). Elles apparaissent dans `/jobs`.
 6. **Recherche** : « stage data remote Lomé ».
-   - S’il y a des offres importées qui matchent → elles s’affichent avec score.
-   - Sinon → bloc « Rien dans le stock » + **Pistes proposées par l’IA**.
-7. Sur une fiche : sauver / suivre candidature / générer une lettre.
+   - S’il y a des offres importées qui matchent (score ≥ 55) → elles s’affichent avec score et source.
+   - Sinon → *No matching opportunities found.* (aucune fausse offre).
+7. Sur une fiche : sauver / **Apply** vers le site officiel si une URL http(s) existe.
 
 ## 8. Fichiers clés
 
 - Auth : `src/lib/auth.ts`, `src/proxy.ts`
 - Matching : `src/lib/matching.ts`
 - Stock : `src/server/jobs-store.ts`
-- Pistes IA : `src/server/propose.ts`
+- Apply officiel : `src/components/apply-official-button.tsx`
 - Rodium : `src/server/rodium.ts`
 - Prisma : `prisma/schema.prisma`
 
 ## 9. Ce qui n’est pas encore dans le code
 
-- Collecte automatique 24 h (ONG, ONU, RSS) — l’admin importe, la recherche IA propose
+- Collecte automatique 24 h (ONG, ONU, RSS) — l’admin importe encore les offres
 - Emails de notification
 - Scraping LinkedIn (volontairement interdit)

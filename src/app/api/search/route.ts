@@ -12,7 +12,7 @@ export async function POST(request: Request) {
 
   const user = await getSessionUser();
   const intent = await resolveIntent(query);
-  const ranked = await rankJobsForUser({ intent, userId: user?.id, limit: 40, proposeIfWeak: true });
+  const ranked = await rankJobsForUser({ intent, userId: user?.id, limit: 40 });
   await persistSearch({ user, intent, ranked });
 
   return NextResponse.json({
@@ -26,6 +26,7 @@ export async function POST(request: Request) {
       contractType: item.contractType,
       seniority: item.seniority,
       source: item.source,
+      sourceUrl: item.sourceUrl,
       score: item.match.score,
       reasons: item.match.reasons,
       gaps: item.match.gaps,

@@ -8,6 +8,17 @@ import type {
   Seniority,
 } from "./types";
 
+export const MIN_MATCH_SCORE = 55;
+
+export function selectVerifiedMatches<T extends { source: string; match: { score: number } }>(
+  jobs: T[],
+  minScore = MIN_MATCH_SCORE,
+): T[] {
+  return jobs.filter(
+    (job) => job.source !== "ai-proposal" && !job.source.startsWith("ai/") && job.match.score >= minScore,
+  );
+}
+
 const WEIGHTS = {
   skills: 0.35,
   query: 0.2,

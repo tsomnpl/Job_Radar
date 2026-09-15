@@ -37,6 +37,7 @@ export default async function HomePage() {
         intent: parseIntentHeuristic("opportunités"),
         userId: user?.id,
         limit: 3,
+        minScore: 0,
       })
     : [];
   const clerkEnabled = isClerkConfigured();
@@ -130,8 +131,8 @@ export default async function HomePage() {
           </div>
         ) : (
           <div className="panel p-6 text-sm text-muted">
-            0 offre pour l&apos;instant. Créez un compte, importez des offres en admin, ou lancez une recherche : l&apos;IA
-            proposera des pistes s&apos;il n&apos;y a rien dans le stock.
+            No opportunities found. We couldn&apos;t find verified opportunities to preview. JobRadar will not invent
+            offers. Import a real posting in Admin, or search with broader criteria.
           </div>
         )}
       </section>

@@ -1,10 +1,10 @@
-import { buildCandidate, explainMatch, narrativeFromMatch } from "@/lib/matching";
+import { buildCandidate, explainMatch, narrativeFromMatch, selectVerifiedMatches, MIN_MATCH_SCORE } from "@/lib/matching";
 import { asJsonArray } from "@/lib/normalize";
 import { logDbError } from "@/lib/db";
 import { prisma } from "@/lib/prisma";
 import { getJobById, jobExistsInDb, listStockJobs } from "@/server/jobs-store";
-import { proposeOpportunities, searchNeedsAiProposals } from "@/server/propose";
 import { isPersistedUser, type AppUser } from "@/lib/auth";
+import { isVerifiedOpportunity } from "@/lib/jobs";
 import type { CandidateSnapshot, RankedJob, SearchIntent } from "@/lib/types";
 
 async function loadCandidate(intent: SearchIntent, userId?: string | null): Promise<CandidateSnapshot> {
@@ -34,25 +34,19 @@ export async function rankJobsForUser(params: {
   intent: SearchIntent;
   userId?: string | null;
   limit?: number;
-  proposeIfWeak?: boolean;
+  minScore?: number;
 }): Promise<RankedJob[]> {
   const [jobs, candidate] = await Promise.all([
     listStockJobs(),
     loadCandidate(params.intent, params.userId),
   ]);
 
-  let ranked = jobs
+  const ranked = jobs
+    .filter(isVerifiedOpportunity)
     .map((record) => ({ ...record, match: explainMatch(record, candidate) }))
-    .sort((a, b) => b.match.score - a.match.score)
-    .slice(0, params.limit ?? 40);
+    .sort((a, b) => b.match.score - a.match.score);
 
-  if (params.proposeIfWeak && searchNeedsAiProposals(ranked)) {
-    const proposed = await proposeOpportunities(params.intent, candidate);
-    const known = new Set(ranked.map((job) => job.id));
-    ranked = [...proposed.filter((job) => !known.has(job.id)), ...ranked].slice(0, params.limit ?? 40);
-  }
-
-  return ranked;
+  return selectVerifiedMatches(ranked, params.minScore ?? MIN_MATCH_SCORE).slice(0, params.limit ?? 40);
 }
 
 export async function persistSearch(params: {
@@ -107,7 +101,7 @@ export async function persistSearch(params: {
 
 export async function matchOneJob(params: { jobId: string; userId?: string | null; query?: string }) {
   const job = await getJobById(params.jobId);
-  if (!job) return null;
+  if (!job || !isVerifiedOpportunity(job)) return null;
   const intent = {
     query: params.query ?? "",
     keywords: [] as string[],

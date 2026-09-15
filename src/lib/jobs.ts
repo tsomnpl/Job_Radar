@@ -45,6 +45,30 @@ export function toJobRecord(job: {
   };
 }
 
+export const NOT_SPECIFIED = "Not specified";
+
+export function displayField(value: string | null | undefined): string {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : NOT_SPECIFIED;
+}
+
+/** Real http(s) application/source URL only. Never ai:// or invented schemes. */
+export function officialApplicationUrl(url: string | null | undefined): string | null {
+  if (!url?.trim()) return null;
+  try {
+    const parsed = new URL(url.trim());
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    if (!parsed.hostname) return null;
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
+export function isVerifiedOpportunity(job: { source: string }): boolean {
+  return job.source !== "ai-proposal" && !job.source.startsWith("ai/");
+}
+
 export function formatSalary(min: number | null, max: number | null, currency: string): string | null {
   if (min == null && max == null) return null;
   const formatter = new Intl.NumberFormat("fr-FR");
@@ -94,14 +118,6 @@ export function formatOpportunityType(contractType: string): string {
   return labels[contractType] ?? "Opportunité";
 }
 
-export function formatDuration(contractType: string): string {
-  const labels: Record<string, string> = {
-    cdi: "Durée indéterminée",
-    cdd: "Durée déterminée",
-    freelance: "Mission",
-    internship: "3–6 mois (typique)",
-    apprenticeship: "12 mois (typique)",
-    other: "Selon l'offre",
-  };
-  return labels[contractType] ?? "Selon l'offre";
+export function formatDuration(): string {
+  return NOT_SPECIFIED;
 }

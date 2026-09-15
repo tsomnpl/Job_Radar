@@ -22,9 +22,9 @@ Ne fabrique pas d'entreprise absente du texte. Si un champ est inconnu, null ou 
 function heuristicExtract(raw: string): JobInput {
   const lines = raw.split(/\n+/).map((line) => line.trim()).filter(Boolean);
   return {
-    title: lines[0]?.slice(0, 120) || "Offre importée",
-    company: lines[1]?.slice(0, 80) || "Organisation",
-    location: /lomé|cotonou|dakar|accra|abidjan|remote|paris/i.exec(raw)?.[0] || "Remote",
+    title: lines[0]?.slice(0, 120) || "Not specified",
+    company: lines[1]?.slice(0, 80) || "Not specified",
+    location: /lomé|cotonou|dakar|accra|abidjan|remote|paris/i.exec(raw)?.[0] || "Not specified",
     description: raw.slice(0, 8000),
     skills: parseSkillList(raw),
     remoteType: parseRemoteType(raw),

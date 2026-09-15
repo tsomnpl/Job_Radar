@@ -1,5 +1,5 @@
 import { logDbError } from "@/lib/db";
-import { toJobRecord } from "@/lib/jobs";
+import { isVerifiedOpportunity, toJobRecord } from "@/lib/jobs";
 import { prisma } from "@/lib/prisma";
 import type { JobRecord } from "@/lib/types";
 import type { NormalizedJobInput } from "@/lib/import-jobs";
@@ -52,7 +52,7 @@ export async function upsertJobRecord(
 }
 
 export function isStockJob(job: Pick<JobRecord, "source">): boolean {
-  return job.source !== "ai-proposal";
+  return isVerifiedOpportunity(job);
 }
 
 export async function listActiveJobs(): Promise<JobRecord[]> {
@@ -75,10 +75,14 @@ export async function listStockJobs(): Promise<JobRecord[]> {
 
 export async function getJobById(id: string): Promise<JobRecord | null> {
   const remembered = memoryJobs.get(id);
-  if (remembered) return remembered;
+  if (remembered && isStockJob(remembered)) return remembered;
+  if (remembered && !isStockJob(remembered)) return null;
   try {
     const job = await prisma.job.findUnique({ where: { id } });
-    if (job) return toJobRecord(job);
+    if (job) {
+      const record = toJobRecord(job);
+      return isStockJob(record) ? record : null;
+    }
   } catch (error) {
     logDbError("getJobById", error);
   }

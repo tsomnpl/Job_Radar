@@ -1,9 +1,9 @@
 import { JobCard } from "@/components/job-card";
+import { EmptyResults } from "@/components/empty-results";
 import { getSessionUser } from "@/lib/auth";
 import { rankJobsForUser } from "@/server/rank";
 import { parseIntentHeuristic } from "@/lib/intent";
 import { listStockJobs } from "@/server/jobs-store";
-import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +15,7 @@ export default async function JobsPage() {
         intent: parseIntentHeuristic("opportunités pertinentes"),
         userId: user?.id,
         limit: 50,
+        minScore: 0,
       })
     : [];
 
@@ -23,25 +24,11 @@ export default async function JobsPage() {
       <div>
         <h1 className="text-3xl font-semibold">Offres actives</h1>
         <p className="mt-2 text-muted">
-          Uniquement les offres que vous (ou l&apos;admin) avez ajoutées. Les pistes IA apparaissent dans la recherche,
-          pas ici.
+          Verified offers only. If nothing matches, JobRadar shows no results — it never invents a job.
         </p>
       </div>
       {ranked.length === 0 ? (
-        <section className="panel space-y-3 p-6">
-          <p className="font-semibold">0 offre</p>
-          <p className="text-sm text-muted">
-            Importez des annonces dans Admin, ou lancez une recherche : si rien ne match, l&apos;IA propose des pistes.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/search" className="btn-primary rounded-full px-4 py-2 text-sm font-semibold">
-              Rechercher
-            </Link>
-            <Link href="/admin" className="rounded-full border border-line px-4 py-2 text-sm font-semibold">
-              Admin
-            </Link>
-          </div>
-        </section>
+        <EmptyResults title="No opportunities found" hint="There are no verified offers in the stock yet." />
       ) : (
         <div className="grid gap-4">
           {ranked.map((job) => (
