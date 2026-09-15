@@ -65,6 +65,10 @@ const SKILL_DICTIONARY = [
   "backend",
   "frontend",
   "fullstack",
+  "cyber",
+  "cybersecurity",
+  "cybersecurite",
+  "securite",
 ];
 
 function detectLocation(query: string): { location: string; country: string } | null {

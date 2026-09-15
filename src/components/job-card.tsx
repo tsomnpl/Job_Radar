@@ -6,12 +6,12 @@ import type { RankedJob } from "@/lib/types";
 export function JobCard({ job }: { job: RankedJob }) {
   const topReason = job.match.reasons.find((reason) => reason.polarity === "positive") ?? job.match.reasons[0];
   return (
-    <Link href={`/jobs/${job.id}`} className="panel block p-5 transition hover:border-[#2ee6d6]/50">
+    <Link href={`/jobs/${job.id}`} className="panel block p-5 transition hover:border-accent">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-[#8eacb0]">{job.company}</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-muted">{job.company}</p>
           <h3 className="mt-1 text-lg font-semibold">{job.title}</h3>
-          <p className="mt-1 text-sm text-[#b9d4d4]">
+          <p className="mt-1 text-sm text-muted">
             {job.location}
             {job.country ? ` · ${job.country}` : ""}
           </p>
@@ -22,10 +22,11 @@ export function JobCard({ job }: { job: RankedJob }) {
         <Pill>{formatRemote(job.remoteType)}</Pill>
         <Pill>{formatContract(job.contractType)}</Pill>
         <Pill>{formatSeniority(job.seniority)}</Pill>
+        {job.source ? <Pill>{job.source}</Pill> : null}
       </div>
-      {topReason ? <p className="mt-4 text-sm text-[#cfe7e4]">{topReason.detail}</p> : null}
+      {topReason ? <p className="mt-4 text-sm text-muted">{topReason.detail}</p> : null}
       {job.match.gaps.length ? (
-        <p className="mt-2 text-xs text-[#f5c14a]">Écarts : {job.match.gaps.slice(0, 4).join(", ")}</p>
+        <p className="mt-2 text-xs text-warn">Écarts : {job.match.gaps.slice(0, 4).join(", ")}</p>
       ) : null}
     </Link>
   );

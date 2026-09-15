@@ -1,4 +1,6 @@
 import { fold, normalizeSkill, unique } from "./normalize";
+import { isUnrestrictedRemoteLocation, placesCompatible } from "./places";
+import { tokenMatchesHaystack } from "./synonyms";
 import type {
   CandidateSnapshot,
   JobRecord,
@@ -7,6 +9,17 @@ import type {
   SearchIntent,
   Seniority,
 } from "./types";
+
+export const MIN_MATCH_SCORE = 55;
+
+export function selectVerifiedMatches<T extends { source: string; match: { score: number } }>(
+  jobs: T[],
+  minScore = MIN_MATCH_SCORE,
+): T[] {
+  return jobs.filter(
+    (job) => job.source !== "ai-proposal" && !job.source.startsWith("ai/") && job.match.score >= minScore,
+  );
+}
 
 const WEIGHTS = {
   skills: 0.35,
@@ -52,26 +65,31 @@ function queryScore(query: string, job: JobRecord): number {
   const haystack = fold(`${job.title} ${job.company} ${job.description} ${job.skills.join(" ")}`);
   const tokens = unique(fold(query).split(/[^a-z0-9+#]+/g).filter((token) => token.length > 2));
   if (tokens.length === 0) return 50;
-  const hits = tokens.filter((token) => haystack.includes(token));
+  const hits = tokens.filter((token) => tokenMatchesHaystack(token, haystack));
   const titleFold = fold(job.title);
-  const titleBoost = tokens.some((token) => titleFold.includes(token)) ? 18 : 0;
+  const titleBoost = tokens.some((token) => tokenMatchesHaystack(token, titleFold)) ? 18 : 0;
   return clamp((hits.length / tokens.length) * 82 + titleBoost);
 }
 
 function locationScore(candidate: CandidateSnapshot, job: JobRecord): { score: number; detail: string; polarity: MatchReason["polarity"] } {
-  if (job.remoteType === "remote" && (candidate.remotePreference === "remote" || !candidate.locations.length)) {
-    return { score: 92, detail: "Offre full remote, compatible avec une recherche géographique ouverte.", polarity: "positive" };
-  }
+  const jobPlace = `${job.location} ${job.country ?? ""}`;
+  const unrestricted = isUnrestrictedRemoteLocation(job.location);
+
   if (!candidate.locations.length) {
+    if (job.remoteType === "remote") {
+      return { score: 92, detail: "Offre full remote, compatible avec une recherche géographique ouverte.", polarity: "positive" };
+    }
     return { score: 60, detail: "Aucune localisation candidate : score neutre.", polarity: "neutral" };
   }
-  const jobPlace = fold(`${job.location} ${job.country ?? ""}`);
-  const hit = candidate.locations.some((place) => jobPlace.includes(fold(place)) || fold(place).includes(fold(job.location)));
+
+  const hit = candidate.locations.some(
+    (place) => placesCompatible(place, jobPlace) || placesCompatible(place, job.location),
+  );
   if (hit) {
     return { score: 100, detail: `Correspondance géographique (${job.location}).`, polarity: "positive" };
   }
-  if (job.remoteType === "remote") {
-    return { score: 80, detail: "Pas de match ville à ville, mais l'offre est remote.", polarity: "positive" };
+  if (job.remoteType === "remote" && unrestricted) {
+    return { score: 80, detail: "Pas de match ville à ville, mais l'offre est remote sans restriction géographique.", polarity: "positive" };
   }
   return { score: 28, detail: `Localisation différente (${job.location}).`, polarity: "negative" };
 }

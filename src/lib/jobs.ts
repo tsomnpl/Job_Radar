@@ -20,6 +20,7 @@ export function toJobRecord(job: {
   source: string;
   language: string;
   postedAt: Date;
+  active?: boolean;
 }): JobRecord {
   return {
     id: job.id,
@@ -40,7 +41,32 @@ export function toJobRecord(job: {
     source: job.source,
     language: job.language,
     postedAt: job.postedAt,
+    active: job.active ?? true,
   };
+}
+
+export const NOT_SPECIFIED = "Not specified";
+
+export function displayField(value: string | null | undefined): string {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : NOT_SPECIFIED;
+}
+
+/** Real http(s) application/source URL only. Never ai:// or invented schemes. */
+export function officialApplicationUrl(url: string | null | undefined): string | null {
+  if (!url?.trim()) return null;
+  try {
+    const parsed = new URL(url.trim());
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    if (!parsed.hostname) return null;
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
+export function isVerifiedOpportunity(job: { source: string }): boolean {
+  return job.source !== "ai-proposal" && !job.source.startsWith("ai/");
 }
 
 export function formatSalary(min: number | null, max: number | null, currency: string): string | null {
@@ -78,4 +104,20 @@ export function formatSeniority(value: string): string {
     lead: "Lead",
   };
   return labels[value] ?? value;
+}
+
+export function formatOpportunityType(contractType: string): string {
+  const labels: Record<string, string> = {
+    cdi: "Emploi",
+    cdd: "Emploi",
+    freelance: "Mission / consulting",
+    internship: "Stage",
+    apprenticeship: "Alternance",
+    other: "Opportunité",
+  };
+  return labels[contractType] ?? "Opportunité";
+}
+
+export function formatDuration(): string {
+  return NOT_SPECIFIED;
 }

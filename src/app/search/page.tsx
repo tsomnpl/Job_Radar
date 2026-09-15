@@ -1,11 +1,15 @@
 import { JobCard } from "@/components/job-card";
 import { SearchBox } from "@/components/search-box";
+import { EmptyResults } from "@/components/empty-results";
 import { Pill } from "@/components/brand";
 import { getSessionUser } from "@/lib/auth";
+import { parseIntentHeuristic } from "@/lib/intent";
+import { collectPublicOpportunitiesForIntent, PUBLIC_BOARD_LABELS } from "@/server/collect";
 import { persistSearch, rankJobsForUser } from "@/server/rank";
 import { resolveIntent } from "@/server/search";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
 export default async function SearchPage({
   searchParams,
@@ -17,16 +21,21 @@ export default async function SearchPage({
   if (!query) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-semibold">Recherche en langage naturel</h1>
+        <h1 className="text-3xl font-semibold">Search Opportunities</h1>
+        <p className="text-muted">Describe a real opportunity. JobRadar only returns verified offers — never invented ones.</p>
         <SearchBox />
       </div>
     );
   }
 
   const user = await getSessionUser();
-  const intent = await resolveIntent(query);
+  const heuristic = parseIntentHeuristic(query);
+  const [intent] = await Promise.all([
+    resolveIntent(query),
+    collectPublicOpportunitiesForIntent(heuristic),
+  ]);
   const ranked = await rankJobsForUser({ intent, userId: user?.id });
-  await persistSearch({ userId: user?.id, intent, ranked });
+  await persistSearch({ user, intent, ranked });
 
   return (
     <div className="space-y-8">
@@ -35,7 +44,7 @@ export default async function SearchPage({
         <SearchBox initialQuery={query} size="md" />
       </div>
       <section className="panel p-5">
-        <p className="text-xs uppercase tracking-[0.18em] text-[#2ee6d6]">Intention extraite ({intent.source})</p>
+        <p className="text-xs uppercase tracking-[0.18em] text-accent">Intention extraite ({intent.source})</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {intent.location ? <Pill>{intent.location}</Pill> : null}
           {intent.remoteType ? <Pill>{intent.remoteType}</Pill> : null}
@@ -46,11 +55,19 @@ export default async function SearchPage({
           ))}
         </div>
       </section>
-      <div className="grid gap-4">
-        {ranked.map((job) => (
-          <JobCard key={job.id} job={job} />
-        ))}
-      </div>
+
+      {ranked.length ? (
+        <section className="space-y-4">
+          <h2 className="text-xl font-semibold">Verified opportunities</h2>
+          <div className="grid gap-4">
+            {ranked.map((job) => (
+              <JobCard key={job.id} job={job} />
+            ))}
+          </div>
+        </section>
+      ) : (
+        <EmptyResults sources={PUBLIC_BOARD_LABELS} />
+      )}
     </div>
   );
 }

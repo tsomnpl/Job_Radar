@@ -5,8 +5,13 @@ import { isClerkConfigured } from "@/lib/env";
 const isProtectedRoute = createRouteMatcher(["/dashboard(.*)", "/cv(.*)", "/admin(.*)"]);
 
 const clerkProxy = clerkMiddleware(async (auth, req) => {
-  if (isProtectedRoute(req)) {
-    await auth.protect();
+  if (!isProtectedRoute(req)) return;
+  try {
+    await auth.protect({ unauthenticatedUrl: "/sign-in" });
+  } catch {
+    const signIn = new URL("/sign-in", req.url);
+    signIn.searchParams.set("redirect_url", req.nextUrl.pathname);
+    return NextResponse.redirect(signIn);
   }
 });
 

@@ -22,7 +22,7 @@ export function SaveJobButton({ jobId, initialSaved }: { jobId: string; initialS
       type="button"
       onClick={toggle}
       disabled={pending}
-      className="rounded-full border border-[#1c3a4d] px-4 py-2 text-sm hover:border-[#2ee6d6] disabled:opacity-60"
+      className="rounded-full border border-line px-4 py-2 text-sm hover:border-accent disabled:opacity-60"
     >
       {saved ? "Retiré du radar" : "Garder sur le radar"}
     </button>

@@ -1,27 +1,31 @@
 import { NextResponse } from "next/server";
-import { requireUser } from "@/lib/auth";
+import { isPersistedUser, requireUser } from "@/lib/auth";
+import { logDbError } from "@/lib/db";
 import { prisma } from "@/lib/prisma";
+import { jobExistsInDb } from "@/server/jobs-store";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireUser();
     const { id } = await context.params;
-    const job = await prisma.job.findUnique({ where: { id } });
-    if (!job) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+    if (!isPersistedUser(user) || !(await jobExistsInDb(id))) {
+      return NextResponse.json({ error: "DATABASE_UNAVAILABLE" }, { status: 503 });
+    }
 
     const existing = await prisma.savedJob.findUnique({
       where: { userId_jobId: { userId: user.id, jobId: id } },
     });
     if (existing) {
       await prisma.savedJob.delete({ where: { id: existing.id } });
-      return NextResponse.json({ saved: false });
+      return NextResponse.json({ saved: false, status: null });
     }
-    await prisma.savedJob.create({ data: { userId: user.id, jobId: id } });
-    return NextResponse.json({ saved: true });
+    await prisma.savedJob.create({ data: { userId: user.id, jobId: id, status: "watching" } });
+    return NextResponse.json({ saved: true, status: "watching" });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHENTICATED") {
       return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
     }
-    throw error;
+    logDbError("api.save", error);
+    return NextResponse.json({ error: "DATABASE_UNAVAILABLE" }, { status: 503 });
   }
 }

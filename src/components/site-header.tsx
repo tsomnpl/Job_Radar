@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import { JobRadarLogo } from "@/components/brand";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const LINKS = [
   { href: "/search", label: "Recherche" },
@@ -14,32 +15,28 @@ const LINKS = [
 
 export function SiteHeader({ clerkEnabled, demo }: { clerkEnabled: boolean; demo: boolean }) {
   return (
-    <header className="sticky top-0 z-30 border-b border-[#1c3a4d] bg-[#07111a]/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-30 border-b border-line bg-[var(--header)] backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
         <JobRadarLogo />
-        <nav className="hidden items-center gap-5 text-sm text-[#b9d4d4] md:flex">
+        <nav className="hidden items-center gap-5 text-sm text-muted md:flex">
           {LINKS.map((link) => (
-            <Link key={link.href} href={link.href} className="hover:text-[#2ee6d6]">
+            <Link key={link.href} href={link.href} className="hover:text-accent">
               {link.label}
             </Link>
           ))}
         </nav>
         <div className="flex items-center gap-3 text-sm">
           {demo ? (
-            <span className="rounded-full border border-[#14685f] px-3 py-1 text-xs text-[#2ee6d6]">
-              Mode démo
-            </span>
+            <span className="rounded-full border border-line px-3 py-1 text-xs text-accent">Mode démo</span>
           ) : null}
+          <ThemeToggle />
           {clerkEnabled ? (
             <>
               <SignedOut>
-                <Link href="/sign-in" className="hover:text-[#2ee6d6]">
+                <Link href="/sign-in" className="hover:text-accent">
                   Connexion
                 </Link>
-                <Link
-                  href="/sign-up"
-                  className="rounded-full bg-[#2ee6d6] px-3 py-1.5 font-medium text-[#07111a]"
-                >
+                <Link href="/sign-up" className="btn-primary rounded-full px-3 py-1.5 font-medium">
                   Inscription
                 </Link>
               </SignedOut>
@@ -48,7 +45,7 @@ export function SiteHeader({ clerkEnabled, demo }: { clerkEnabled: boolean; demo
               </SignedIn>
             </>
           ) : (
-            <Link href="/dashboard" className="rounded-full bg-[#2ee6d6] px-3 py-1.5 font-medium text-[#07111a]">
+            <Link href="/dashboard" className="btn-primary rounded-full px-3 py-1.5 font-medium">
               Ouvrir le radar
             </Link>
           )}

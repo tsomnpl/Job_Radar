@@ -73,4 +73,61 @@ describe("explainMatch", () => {
     const remoteReason = match.reasons.find((reason) => reason.factor === "remote");
     expect(remoteReason?.polarity).toBe("negative");
   });
+
+  it("does not treat a geo-restricted remote job as a Togo match", () => {
+    const restricted: JobRecord = {
+      ...baseJob,
+      id: "3",
+      title: "Cybersecurity Intern",
+      company: "CertiK",
+      location: "APAC, Europe",
+      country: null,
+      remoteType: "remote",
+      contractType: "internship",
+      seniority: "intern",
+      skills: ["security"],
+      description: "Remote internship in cybersecurity, APAC or Europe only.",
+      source: "jobicy",
+      sourceUrl: "https://jobicy.com/jobs/153136-compliance-engineer-intern",
+    };
+    const intent = parseIntentHeuristic("stage cybersécurité Togo");
+    const candidate = buildCandidate(intent, {
+      skills: ["cybersecurity"],
+      languages: ["fr"],
+      locations: ["Togo"],
+      seniority: "intern",
+      yearsExperience: 0,
+      remotePreference: "remote",
+      headline: null,
+      query: intent.query,
+    });
+    const match = explainMatch(restricted, candidate);
+    const locationReason = match.reasons.find((reason) => reason.factor === "location");
+    expect(locationReason?.polarity).toBe("negative");
+    expect(match.score).toBeLessThan(55);
+  });
+
+  it("matches French internship wording to an English cybersecurity intern title", () => {
+    const worldwide: JobRecord = {
+      ...baseJob,
+      id: "4",
+      title: "Cybersecurity Intern",
+      company: "Northwind Labs",
+      location: "Worldwide",
+      country: null,
+      remoteType: "remote",
+      contractType: "internship",
+      seniority: "intern",
+      skills: ["security"],
+      description: "Global remote internship in cybersecurity.",
+      source: "remoteok",
+      sourceUrl: "https://careers.northwind.example/intern-cyber",
+    };
+    const intent = parseIntentHeuristic("stage cybersécurité");
+    const candidate = buildCandidate(intent);
+    const match = explainMatch(worldwide, candidate);
+    const queryReason = match.reasons.find((reason) => reason.factor === "query");
+    expect(queryReason?.score).toBeGreaterThanOrEqual(70);
+    expect(match.score).toBeGreaterThanOrEqual(55);
+  });
 });

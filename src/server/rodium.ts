@@ -11,6 +11,8 @@ type RodiumResponse = {
   };
 };
 
+const RODIUM_TIMEOUT_MS = 8_000;
+
 function extractJson(text: string): unknown {
   const trimmed = text.trim();
   const fenced = trimmed.match(/```json([\s\S]*?)```/i);
@@ -43,29 +45,38 @@ export async function rodiumChatJson(params: {
     { role: "user", content: params.user },
   ];
 
-  const response = await fetch(`${baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature: params.temperature ?? 0.2,
-      response_format: { type: "json_object" },
-    }),
-  });
+  try {
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature: params.temperature ?? 0.2,
+        max_tokens: 800,
+        response_format: { type: "json_object" },
+      }),
+      signal: AbortSignal.timeout(RODIUM_TIMEOUT_MS),
+    });
 
-  if (!response.ok) {
+    if (!response.ok) {
+      console.error("[rodium] HTTP", response.status);
+      return null;
+    }
+
+    const data = (await response.json()) as RodiumResponse;
+    const raw = data.choices?.[0]?.message?.content ?? "";
+    return {
+      json: extractJson(raw),
+      model: data.model ?? model,
+      raw,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    console.error("[rodium] request failed:", message);
     return null;
   }
-
-  const data = (await response.json()) as RodiumResponse;
-  const raw = data.choices?.[0]?.message?.content ?? "";
-  return {
-    json: extractJson(raw),
-    model: data.model ?? model,
-    raw,
-  };
 }

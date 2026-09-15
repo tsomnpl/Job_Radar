@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
+import { parseIntentHeuristic } from "@/lib/intent";
+import { collectPublicOpportunitiesForIntent, PUBLIC_BOARD_LABELS } from "@/server/collect";
 import { persistSearch, rankJobsForUser } from "@/server/rank";
 import { resolveIntent } from "@/server/search";
+
+export const maxDuration = 30;
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as { query?: string } | null;
@@ -11,12 +15,17 @@ export async function POST(request: Request) {
   }
 
   const user = await getSessionUser();
-  const intent = await resolveIntent(query);
+  const heuristic = parseIntentHeuristic(query);
+  const [intent] = await Promise.all([
+    resolveIntent(query),
+    collectPublicOpportunitiesForIntent(heuristic),
+  ]);
   const ranked = await rankJobsForUser({ intent, userId: user?.id, limit: 40 });
-  await persistSearch({ userId: user?.id, intent, ranked });
+  await persistSearch({ user, intent, ranked });
 
   return NextResponse.json({
     intent,
+    sourcesConsulted: PUBLIC_BOARD_LABELS,
     results: ranked.map((item) => ({
       id: item.id,
       title: item.title,
@@ -25,6 +34,8 @@ export async function POST(request: Request) {
       remoteType: item.remoteType,
       contractType: item.contractType,
       seniority: item.seniority,
+      source: item.source,
+      sourceUrl: item.sourceUrl,
       score: item.match.score,
       reasons: item.match.reasons,
       gaps: item.match.gaps,
