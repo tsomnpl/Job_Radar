@@ -14,15 +14,45 @@ Repo GitHub : `tsomnpl/Job_Radar`. Production : `https://job-radar-six-ochre.ver
 
 ## 2. Compte (Clerk)
 
-1. L’utilisateur clique **Créer un compte** → `/sign-up` (composant Clerk).
+Deux instances distinctes — **ne pas les mélanger** :
+
+| | Development | Production |
+| --- | --- | --- |
+| Clés | `pk_test_` / `sk_test_` | `pk_live_` / `sk_live_` |
+| Frontend API | `*.clerk.accounts.dev` | domaine **que tu possèdes** |
+| `*.vercel.app` | OK (origines autorisées) | **interdit** comme domaine Clerk Production (DNS / Frontend API) |
+| Proxy `/__clerk` | **désactivé** (Clerk : le proxy ne marche pas en Development) | à activer dans le Dashboard après le domaine perso |
+
+JobRadar est branché sur l’app `app_3JKP12NGJMbeVuqi5HAaeGLEQYX`. Les clés **Production** (`pk_live_`) ne sont **jamais** remplacées automatiquement par `pk_test_`.
+
+`pk_test_` sur Vercel = Clerk Development utilisable (Sign In / Sign Up / widget). Ce n’est **pas** Clerk Production terminé.
+
+Checklist Dashboard Production (vérifiée une par une via `GET /api/status`, pas juste « les variables existent ») :
+
+1. **Set up environment variables** — `pk_live_` + `sk_live_` + `NEXT_PUBLIC_APP_URL=https://<domaine-à-toi>` (pas `*.vercel.app`).
+2. **Configure app proxy /__clerk** — route `src/app/%5F%5Fclerk/` déjà dans le repo (`GET/POST /__clerk/*` → `https://frontend-api.clerk.dev`, headers `Clerk-Proxy-Url`, `Clerk-Secret-Key`, `X-Forwarded-For`). SDK `@clerk/nextjs@6.39.6` n’a pas `frontendApiProxy` : le route handler est l’équivalent documenté. À **activer** dans Clerk → Domains → Set proxy configuration = `https://<votre-domaine>/__clerk`. `proxyUrl` n’est passé à `ClerkProvider` / `clerkMiddleware` **que** si la clé est `pk_live_`.
+3. **Create your first user in production** — Sign Up sur ce domaine, puis Dashboard → Apply (URL officielle `http(s)` uniquement). Un compte Development sur `*.vercel.app` ne compte pas.
+
+Parcours une fois le compte chargé :
+
+1. **Connexion** / **Inscription** dans le header (composants Clerk) → `/sign-in` / `/sign-up`.
 2. Après inscription / connexion, redirection vers **`/dashboard`**.
 3. Un utilisateur Prisma est créé (`clerkUserId`). **Profil, CV, offres, candidatures = 0.**
-4. Routes protégées (middleware `src/proxy.ts`) : `/dashboard`, `/cv`, `/admin`. Sans session → `/sign-in`.
+4. Les pages restent visibles sans session. La sauvegarde (CV, radar, admin import) exige un compte.
 5. Si `ADMIN_CLERK_USER_IDS` est **vide**, tout compte connecté est admin (MVP). Sinon seuls les IDs listés le sont.
 6. Sans clés Clerk, mode démo local (un profil admin `demo_local_user`).
 
-Variables : `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, URLs `/sign-in` `/sign-up`.  
-Dans Clerk : autoriser le domaine Vercel (`job-radar-six-ochre.vercel.app`).
+État réel : `GET /api/status` (aucune clé n’est renvoyée). `clerk.developmentAuthUsable` vs `clerk.productionReady`.
+
+Variables : `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `NEXT_PUBLIC_CLERK_PROXY_URL` (Production seulement), URLs `/sign-in` `/sign-up`.
+
+## 2b. Emails (Resend)
+
+Pas de mailer maison. Service unique `src/server/email.ts` (import `server-only`, `RESEND_API_KEY` jamais exposée au frontend).
+
+- `EMAIL_FROM` = adresse d’un domaine **vérifié** chez Resend (pas `@example.com`).
+- Tant que `RESEND_API_KEY` **et** `EMAIL_FROM` valides ne sont pas configurés, **aucun envoi** (`email.functional: false`).
+- Usages : matching / nouvelles opportunités (`daily_digest` via cron `GET /api/cron/radar`), notification Apply (`notice` + lien officiel), éventuellement résumé quotidien (même cron, cooldown 20 h).
 
 ## 3. Données : tout part de zéro
 
@@ -96,7 +126,8 @@ Pas de Money Fusion. Pas de crawl 24 h / CAPTCHA / LinkedIn-only.
 
 ## 8. Fichiers clés
 
-- Auth : `src/lib/auth.ts`, `src/proxy.ts`
+- Auth : `src/lib/auth.ts`, `src/proxy.ts`, `src/app/%5F%5Fclerk/`
+- Emails Resend : `src/server/email.ts`, `src/server/alerts.ts`
 - Matching : `src/lib/matching.ts`
 - Stock : `src/server/jobs-store.ts`
 - Collecte publique : `src/server/collect.ts`, `src/server/public-sources.ts`
@@ -106,6 +137,7 @@ Pas de Money Fusion. Pas de crawl 24 h / CAPTCHA / LinkedIn-only.
 
 ## 9. Ce qui n’est pas encore dans le code
 
-- Emails de notification
 - Scraping LinkedIn (volontairement interdit)
 - ReliefWeb jobs API (v1 410, v2 exige un `appname` approuvé — non utilisé)
+- Envoi email **réel** tant que Resend n’a pas `RESEND_API_KEY` + domaine/`EMAIL_FROM` vérifiés
+- Clerk **Production** tant que le domaine perso + Dashboard proxy + premier Sign Up Production ne sont pas faits

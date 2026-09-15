@@ -1,5 +1,5 @@
 import { AuthClerkPanel } from "@/components/auth-clerk-panel";
-import { isClerkConfigured } from "@/lib/env";
+import { isClerkConfigured, isClerkProduction } from "@/lib/env";
 import Link from "next/link";
 
 export default function SignInPage() {
@@ -14,5 +14,5 @@ export default function SignInPage() {
       </div>
     );
   }
-  return <AuthClerkPanel mode="sign-in" />;
+  return <AuthClerkPanel mode="sign-in" instance={isClerkProduction() ? "production" : "development"} />;
 }

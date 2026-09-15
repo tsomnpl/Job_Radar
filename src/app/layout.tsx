@@ -4,7 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { SiteHeader } from "@/components/site-header";
 import { ThemeProvider } from "@/components/theme-provider";
 import { clerkAppearance } from "@/lib/clerk-appearance";
-import { isClerkConfigured } from "@/lib/env";
+import { clerkClientProxyUrl, isClerkConfigured, isClerkProduction } from "@/lib/env";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -50,6 +50,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {clerkEnabled ? (
           <ClerkProvider
             appearance={clerkAppearance}
+            {...(isClerkProduction() ? { proxyUrl: clerkClientProxyUrl() } : {})}
             signInUrl="/sign-in"
             signUpUrl="/sign-up"
             signInFallbackRedirectUrl="/dashboard"

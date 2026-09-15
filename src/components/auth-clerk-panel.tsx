@@ -7,25 +7,19 @@ import { clerkAppearance } from "@/lib/clerk-appearance";
 
 export function AuthClerkPanel({
   mode,
+  instance,
 }: {
   mode: "sign-in" | "sign-up";
+  instance: "production" | "development";
 }) {
-  const [hint, setHint] = useState<{ url: string | null; unreachable: boolean } | null>(null);
+  const [hint, setHint] = useState<{ url: string | null } | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const script = document.querySelector<HTMLScriptElement>(
         'script[src*="clerk-js"], script[src*="clerk.browser.js"]',
       );
-      const src = script?.src ?? null;
-      if (!src) {
-        setHint({ url: null, unreachable: true });
-        return;
-      }
-      const controller = new AbortController();
-      fetch(src, { method: "GET", mode: "no-cors", signal: controller.signal })
-        .then(() => setHint({ url: src, unreachable: false }))
-        .catch(() => setHint({ url: src, unreachable: true }));
+      setHint({ url: script?.src ?? null });
     }, 4000);
     return () => window.clearTimeout(timer);
   }, []);
@@ -44,57 +38,67 @@ export function AuthClerkPanel({
 
   const fapiHost = hint?.url ? safeHost(hint.url) : null;
   const vercelFapi = Boolean(fapiHost?.startsWith("clerk.") && fapiHost.endsWith(".vercel.app"));
+  const production = instance === "production";
 
   return (
     <div className="mx-auto max-w-lg space-y-5">
       <section className="panel space-y-3 p-6">
         <h1 className="text-2xl font-semibold">{title}</h1>
-        <p className="text-sm text-muted">
-          Les clés Clerk sont bien sur Vercel. Le formulaire se charge depuis le Frontend API Clerk — s&apos;il reste
-          vide, ce n&apos;est pas un `.env` manquant.
-        </p>
+        {production ? (
+          <p className="text-sm text-muted">
+            Instance Clerk <strong>Production</strong> (<code>pk_live_</code>). Le widget charge le Frontend API via{" "}
+            <code>/__clerk</code> — JobRadar ne remplace pas ces clés par <code>pk_test_</code>.
+          </p>
+        ) : (
+          <p className="text-sm text-muted">
+            Instance Clerk <strong>Development</strong> (<code>pk_test_</code>). Le Frontend API est{" "}
+            <code>*.clerk.accounts.dev</code>. Le proxy <code>/__clerk</code> est <strong>désactivé</strong> ici : Clerk
+            indique que le proxy ne fonctionne pas sur une instance Development (ce qui casserait Sign In sur{" "}
+            <code>*.vercel.app</code>).
+          </p>
+        )}
         {other}
       </section>
       <ClerkLoading>
         <div className="panel min-h-[280px] p-6 text-sm text-muted">Chargement du formulaire de compte…</div>
         {hint ? (
           <section className="panel mt-5 space-y-3 p-6 text-sm">
-            <h2 className="font-semibold">Clerk ne charge pas le widget</h2>
-            {vercelFapi ? (
+            <h2 className="font-semibold">
+              {production ? "Clerk Production n’a pas fini de charger" : "Clerk Development n’a pas fini de charger"}
+            </h2>
+            {production && vercelFapi ? (
               <>
                 <p>
-                  La clé <code>pk_live_</code> pointe le Frontend API vers <code>{fapiHost}</code>. Ce sous-domaine
-                  n&apos;a pas de HTTPS valide — tu ne peux pas créer <code>clerk.*.vercel.app</code> (Vercel gère le
-                  DNS).
+                  La <code>pk_live_</code> pointe encore vers <code>{fapiHost}</code>, qui n&apos;a pas de HTTPS. Ce
+                  n&apos;est pas un problème de clés test : Clerk Production n&apos;accepte pas <code>*.vercel.app</code>{" "}
+                  comme domaine DNS.
                 </p>
                 <ol className="list-decimal space-y-2 pl-5 text-muted">
                   <li>
-                    Ouvre{" "}
-                    <a className="text-accent" href="https://dashboard.clerk.com" target="_blank" rel="noreferrer">
-                      Clerk Dashboard
-                    </a>{" "}
-                    → Configure → Domains.
+                    Gardez les clés <code>pk_live_</code> / <code>sk_live_</code> (ne les remplacez pas par{" "}
+                    <code>pk_test_</code>).
                   </li>
                   <li>
-                    N&apos;utilise <strong>pas</strong> <code>job-radar-six-ochre.vercel.app</code> comme domaine
-                    Frontend API.
+                    Ajoutez <strong>un domaine que vous possédez</strong> dans Vercel, puis dans Clerk → Configure →
+                    Domains.
                   </li>
                   <li>
-                    Le plus simple : instance <strong>Development</strong> (<code>pk_test_</code> /{" "}
-                    <code>sk_test_</code>) dont l&apos;API est <code>*.clerk.accounts.dev</code>.
+                    Checklist Clerk : <strong>Configure app proxy /__clerk</strong> →{" "}
+                    <code>https://votre-domaine/__clerk</code> (cette app expose déjà cette route).
                   </li>
                   <li>
-                    Ajoute <code>https://job-radar-six-ochre.vercel.app</code> seulement en Allowed origin / Redirect
-                    URLs.
+                    Set environment variables : <code>NEXT_PUBLIC_APP_URL=https://votre-domaine</code> et{" "}
+                    <code>NEXT_PUBLIC_CLERK_PROXY_URL=https://votre-domaine/__clerk</code> dans Vercel, puis Redeploy.
                   </li>
-                  <li>Colle les nouvelles clés dans Vercel → Environment Variables, puis Redeploy.</li>
+                  <li>Create your first user in production : Sign Up sur ce domaine, pas sur le Dashboard Clerk.</li>
                 </ol>
               </>
             ) : (
               <p className="text-muted">
-                Script Clerk : <code className="break-all">{hint.url ?? "introuvable"}</code>. Vérifie Allowed origins
-                dans Clerk et que <code>NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY</code> / <code>CLERK_SECRET_KEY</code> sont
-                le même couple.
+                Script Clerk : <code className="break-all">{hint.url ?? "introuvable"}</code>
+                {production
+                  ? ". Vérifiez le proxy /__clerk dans Clerk Dashboard et que le domaine Production est le vôtre."
+                  : ". En Development le widget doit parler à *.clerk.accounts.dev. Si NEXT_PUBLIC_CLERK_PROXY_URL est défini sur Vercel, retirez-le."}
               </p>
             )}
           </section>
