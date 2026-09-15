@@ -92,66 +92,86 @@ export async function clerkInstanceStatus(): Promise<ClerkInstanceStatus> {
   const dashboardProxyOk = Boolean(remote?.dashboardProxyUrl?.includes("/__clerk"));
   const ownedDomain = production && !vercelHost && !domainLooksVercelApp;
 
-  const envItem: ClerkChecklistItem = production
+  const envItem: ClerkChecklistItem = !configured
     ? {
         id: "env",
         title: "Set up environment variables",
-        done: configured && aligned && !vercelHost,
-        detail: !configured
-          ? "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY are missing."
-          : !aligned
+        done: false,
+        detail: "Clerk keys missing (NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY + CLERK_SECRET_KEY).",
+      }
+    : production
+      ? {
+          id: "env",
+          title: "Set up environment variables",
+          done: aligned && !vercelHost,
+          detail: !aligned
             ? "Publishable key is pk_live_ but the secret is not sk_live_ (or the reverse). Keep the Production pair together — do not substitute pk_test_."
             : vercelHost
               ? `NEXT_PUBLIC_APP_URL is still ${appUrl()}. Clerk Production cannot use *.vercel.app as its DNS/Frontend API domain. Point Vercel + Clerk at a domain you own, then set NEXT_PUBLIC_APP_URL and (only then) NEXT_PUBLIC_CLERK_PROXY_URL.`
               : "Production keys are present and APP_URL is not a vercel.app host.",
-      }
-    : {
-        id: "env",
-        title: "Set up environment variables",
-        done: false,
-        detail: configured
-          ? "Development keys (pk_test_/sk_test_) are set. That is valid for Clerk Development on *.vercel.app. The Production checklist still needs the existing pk_live_/sk_live_ pair plus a domain you own — JobRadar will not replace live keys with test keys."
-          : "Clerk keys missing (NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY + CLERK_SECRET_KEY).",
-      };
+        }
+      : {
+          id: "env",
+          title: "Set up environment variables",
+          done: false,
+          detail:
+            "Development keys (pk_test_/sk_test_) are set. That is valid for Clerk Development on *.vercel.app. The Production checklist still needs the existing pk_live_/sk_live_ pair plus a domain you own — JobRadar will not replace live keys with test keys.",
+        };
 
-  const firstUserItem: ClerkChecklistItem = production
+  const firstUserItem: ClerkChecklistItem = !configured
     ? {
-        id: "first_user",
-        title: "Create your first user in production",
-        done: Boolean(remote && remote.userCount > 0),
-        detail: !remote
-          ? "Could not inspect Clerk users (API timeout or secret rejected). Create the first Production user via Sign Up on the owned domain — not only in the Clerk Dashboard."
-          : remote.userCount > 0
-            ? `Clerk Production reports ${remote.userCount} user${remote.userCount === 1 ? "" : "s"}.`
-            : "No Production user yet. Sign Up on the owned domain (Sign In → Dashboard → Apply).",
-      }
-    : {
         id: "first_user",
         title: "Create your first user in production",
         done: false,
         detail:
-          "This instance is Clerk Development. A Development account on *.vercel.app is not a Production user. After the owned domain + pk_live_, create the first Production user via Sign Up on that domain.",
-      };
+          "Impossible tant que Clerk n’est pas configuré. Le premier utilisateur Production se crée via Sign Up sur le domaine que tu possèdes, après pk_live_ — pas dans le Dashboard seul.",
+      }
+    : production
+      ? {
+          id: "first_user",
+          title: "Create your first user in production",
+          done: Boolean(remote && remote.userCount > 0),
+          detail: !remote
+            ? "Could not inspect Clerk users (API timeout or secret rejected). Create the first Production user via Sign Up on the owned domain — not only in the Clerk Dashboard."
+            : remote.userCount > 0
+              ? `Clerk Production reports ${remote.userCount} user${remote.userCount === 1 ? "" : "s"}.`
+              : "No Production user yet. Sign Up on the owned domain (Sign In → Dashboard → Apply).",
+        }
+      : {
+          id: "first_user",
+          title: "Create your first user in production",
+          done: false,
+          detail:
+            "This instance is Clerk Development. A Development account on *.vercel.app is not a Production user. After the owned domain + pk_live_, create the first Production user via Sign Up on that domain.",
+        };
 
-  const proxyItem: ClerkChecklistItem = production
+  const proxyItem: ClerkChecklistItem = !configured
     ? {
         id: "proxy",
         title: "Configure app proxy /__clerk",
-        done: Boolean(ownedDomain && dashboardProxyOk && clerkClientProxyUrl()),
-        detail: !ownedDomain
-          ? "Route GET/POST /__clerk/* exists in the app (SDK 6.39.6 has no frontendApiProxy helper). Enable it in Clerk Dashboard → Domains → Set proxy configuration → https://<votre-domaine>/__clerk after DNS is a domain you own. Clerk does not accept *.vercel.app here."
-          : !dashboardProxyOk
-            ? `App proxy route is live. Clerk Dashboard proxy_url is ${remote?.dashboardProxyUrl ?? "unset"}. Set it to https://<votre-domaine>/__clerk (Clerk docs: proxying is Production-only).`
-            : "Dashboard proxy URL includes /__clerk and the app sends proxyUrl only because this is pk_live_.",
-      }
-    : {
-        id: "proxy",
-        title: "Configure app proxy /__clerk",
         done: false,
-        detail: proxyEnvOnDevelopment
-          ? "NEXT_PUBLIC_CLERK_PROXY_URL is set while using pk_test_. Clerk: proxying does not work on development instances — unset that variable on Vercel or Sign In will break."
-          : "Proxy /__clerk is implemented but disabled while pk_test_ is in use, so Development login on *.vercel.app keeps using *.clerk.accounts.dev. Enable the Dashboard proxy only after switching the deployment to pk_live_ on a domain you own.",
-      };
+        detail:
+          "La route /__clerk existe dans le repo. Elle reste inactive tant qu’il n’y a pas de pk_live_ (docs Clerk : le proxy ne fonctionne pas sur une instance Development).",
+      }
+    : production
+      ? {
+          id: "proxy",
+          title: "Configure app proxy /__clerk",
+          done: Boolean(ownedDomain && dashboardProxyOk && clerkClientProxyUrl()),
+          detail: !ownedDomain
+            ? "Route GET/POST /__clerk/* exists in the app (SDK 6.39.6 has no frontendApiProxy helper). Enable it in Clerk Dashboard → Domains → Set proxy configuration → https://<votre-domaine>/__clerk after DNS is a domain you own. Clerk does not accept *.vercel.app here."
+            : !dashboardProxyOk
+              ? `App proxy route is live. Clerk Dashboard proxy_url is ${remote?.dashboardProxyUrl ?? "unset"}. Set it to https://<votre-domaine>/__clerk (Clerk docs: proxying is Production-only).`
+              : "Dashboard proxy URL includes /__clerk and the app sends proxyUrl only because this is pk_live_.",
+        }
+      : {
+          id: "proxy",
+          title: "Configure app proxy /__clerk",
+          done: false,
+          detail: proxyEnvOnDevelopment
+            ? "NEXT_PUBLIC_CLERK_PROXY_URL is set while using pk_test_. Clerk: proxying does not work on development instances — unset that variable on Vercel or Sign In will break."
+            : "Proxy /__clerk is implemented but disabled while pk_test_ is in use, so Development login on *.vercel.app keeps using *.clerk.accounts.dev. Enable the Dashboard proxy only after switching the deployment to pk_live_ on a domain you own.",
+        };
 
   const checklist = [envItem, firstUserItem, proxyItem];
   const developmentAuthUsable = configured && kind === "pk_test" && aligned && !proxyEnvOnDevelopment;

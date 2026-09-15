@@ -15,11 +15,13 @@ export async function GET() {
       ready: clerk.productionReady,
       firstProductionUser: clerk.productionReady
         ? "present"
-        : clerk.instance === "development"
-          ? "not a production user — Development Sign Up on *.vercel.app does not complete the Production checklist"
-          : clerk.userCount && clerk.userCount > 0
-            ? "present"
-            : "unknown or none — create a user via Sign Up on the production domain",
+        : clerk.instance === "none"
+          ? "Clerk keys missing"
+          : clerk.instance === "development"
+            ? "not a production user — Development Sign Up on *.vercel.app does not complete the Production checklist"
+            : clerk.userCount && clerk.userCount > 0
+              ? "present"
+              : "unknown or none — create a user via Sign Up on the production domain",
     },
     email: {
       ...email,
