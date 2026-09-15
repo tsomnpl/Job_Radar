@@ -251,7 +251,7 @@ export function parseRemotivePayload(payload: unknown): PublicOpportunity[] {
 
 function isInternSignal(job: PublicOpportunity): boolean {
   const haystack = fold(`${job.title} ${job.contractType} ${job.seniority} ${job.description.slice(0, 400)}`);
-  return /(intern|internship|stage|stagiaire|trainee|apprentice)/.test(haystack);
+  return /(?:^|[^a-z])(?:interns?|internship|stage|stagiaire|trainee|apprentice)(?:[^a-z]|$)/.test(haystack);
 }
 
 function roleTokensFromIntent(intent: SearchIntent): string[] {
