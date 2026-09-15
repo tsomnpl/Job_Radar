@@ -2,7 +2,7 @@ import { buildCandidate, explainMatch, jobFitsSearchIntent, narrativeFromMatch, 
 import { asJsonArray } from "@/lib/normalize";
 import { logDbError } from "@/lib/db";
 import { prisma } from "@/lib/prisma";
-import { getJobById, jobExistsInDb, listStockJobs } from "@/server/jobs-store";
+import { getJobById, jobExistsInDb, listSearchableJobs } from "@/server/jobs-store";
 import { isPersistedUser, type AppUser } from "@/lib/auth";
 import { isVerifiedOpportunity } from "@/lib/jobs";
 import type { CandidateSnapshot, RankedJob, SearchIntent } from "@/lib/types";
@@ -37,7 +37,7 @@ export async function rankJobsForUser(params: {
   minScore?: number;
 }): Promise<RankedJob[]> {
   const [jobs, candidate] = await Promise.all([
-    listStockJobs(),
+    listSearchableJobs(),
     loadCandidate(params.intent, params.userId),
   ]);
 

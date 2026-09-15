@@ -3,6 +3,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SiteHeader } from "@/components/site-header";
 import { ThemeProvider } from "@/components/theme-provider";
+import { getSessionUser } from "@/lib/auth";
 import { clerkAppearance } from "@/lib/clerk-appearance";
 import { clerkClientProxyUrl, isClerkConfigured, isClerkProduction } from "@/lib/env";
 import "./globals.css";
@@ -25,11 +26,13 @@ export const metadata: Metadata = {
 
 const THEME_BOOTSTRAP = `try{if(localStorage.getItem('jobradar-theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}`;
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
   const clerkEnabled = isClerkConfigured();
+  const user = await getSessionUser();
+  const signedIn = Boolean(user) && (!clerkEnabled || !user?.isDemo);
   const body = (
     <ThemeProvider>
-      <SiteHeader clerkEnabled={clerkEnabled} demo={!clerkEnabled} />
+      <SiteHeader clerkEnabled={clerkEnabled} signedIn={signedIn} isAdmin={user?.role === "ADMIN"} />
       <main className="mx-auto min-h-[70vh] w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
       <footer className="border-t border-line px-4 py-6 text-center text-xs text-muted">
         JobRadar · Your next opportunity, before you miss it.

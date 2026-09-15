@@ -19,9 +19,22 @@ const baseJob: JobRecord = {
   languages: ["fr"],
   description: "Stage data remote Cotonou, SQL Excel Python.",
   sourceUrl: null,
-  source: "seed",
+  source: "jobicy",
   language: "fr",
   postedAt: new Date(),
+  companyLogo: null,
+  applicationUrl: null,
+  requirements: null,
+  education: null,
+  experience: null,
+  benefits: null,
+  duration: null,
+  contactInfo: null,
+  deadline: null,
+  startDate: null,
+  endDate: null,
+  status: "published",
+  active: true,
 };
 
 describe("explainMatch", () => {

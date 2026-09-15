@@ -80,7 +80,8 @@ Voir `docs/FONCTIONNEMENT.md` pour le parcours produit (compte, collecte publiqu
 | `NEXT_PUBLIC_CLERK_PROXY_URL` | Proxy Frontend API (`/__clerk`). **Production seulement** — ne pas le définir avec `pk_test_` |
 | `RODIUMAI_API_KEY` | LLM. Vide = parseurs déterministes |
 | `RODIUMAI_BASE_URL` | `https://api.rodiumai.io/v1` |
-| `ADMIN_CLERK_USER_IDS` | IDs Clerk admin (import) |
+| `ADMIN_EMAIL` | Email Clerk vérifié du seul administrateur (fail-closed : vide = personne) |
+| `ADMIN_CLERK_USER_IDS` | IDs Clerk admin optionnels (liste vide ≠ tout le monde admin) |
 | `DATABASE_URL` | `postgresql://…` obligatoire en production |
 | `RESEND_API_KEY` / `EMAIL_FROM` | Emails (serveur). Les deux obligatoires, sinon aucun envoi |
 | `CRON_SECRET` | Auth du cron `/api/cron/radar` (quotidien 06:00 UTC) |

@@ -11,11 +11,12 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       return NextResponse.json({ error: "DATABASE_UNAVAILABLE" }, { status: 503 });
     }
     const body = (await request.json().catch(() => null)) as { active?: boolean } | null;
+    const publish = Boolean(body?.active);
     const job = await prisma.job.update({
       where: { id },
-      data: { active: Boolean(body?.active) },
+      data: { active: publish, status: publish ? "published" : "unpublished" },
     });
-    return NextResponse.json({ id: job.id, active: job.active });
+    return NextResponse.json({ id: job.id, active: job.active, status: job.status });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHENTICATED") {
       return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });

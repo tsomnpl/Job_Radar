@@ -4,15 +4,21 @@ import { ClerkLoaded, ClerkLoading, SignIn, SignUp } from "@clerk/nextjs";
 import Link from "next/link";
 import { clerkAppearance } from "@/lib/clerk-appearance";
 
-export function AuthClerkPanel({ mode }: { mode: "sign-in" | "sign-up" }) {
+export function AuthClerkPanel({
+  mode,
+  redirectUrl = "/dashboard",
+}: {
+  mode: "sign-in" | "sign-up";
+  redirectUrl?: string;
+}) {
   const title = mode === "sign-in" ? "Connexion" : "Créer un compte";
   const other =
     mode === "sign-in" ? (
-      <Link href="/sign-up" className="text-accent">
+      <Link href={`/sign-up?redirect_url=${encodeURIComponent(redirectUrl)}`} className="text-accent">
         Pas de compte ? Inscription
       </Link>
     ) : (
-      <Link href="/sign-in" className="text-accent">
+      <Link href={`/sign-in?redirect_url=${encodeURIComponent(redirectUrl)}`} className="text-accent">
         Déjà un compte ? Connexion
       </Link>
     );
@@ -38,14 +44,16 @@ export function AuthClerkPanel({ mode }: { mode: "sign-in" | "sign-up" }) {
               appearance={clerkAppearance}
               routing="path"
               path="/sign-in"
-              fallbackRedirectUrl="/dashboard"
+              forceRedirectUrl={redirectUrl}
+              fallbackRedirectUrl={redirectUrl}
             />
           ) : (
             <SignUp
               appearance={clerkAppearance}
               routing="path"
               path="/sign-up"
-              fallbackRedirectUrl="/dashboard"
+              forceRedirectUrl={redirectUrl}
+              fallbackRedirectUrl={redirectUrl}
             />
           )}
         </div>

@@ -10,6 +10,7 @@ Extrais un JSON strict :
   "skills": string[],
   "languages": string[],
   "locations": string[],
+  "education": string | null,
   "seniority": "intern" | "junior" | "mid" | "senior" | "lead" | null,
   "yearsExperience": number | null,
   "remotePreference": "remote" | "hybrid" | "onsite" | null

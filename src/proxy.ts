@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { clerkAuthorizedParties, clerkClientProxyUrl, isClerkConfigured, isClerkProduction } from "@/lib/env";
 
-const isProtectedRoute = createRouteMatcher(["/__jobradar_never(.*)"]);
+const isProtectedRoute = createRouteMatcher([
+  "/dashboard(.*)",
+  "/cv(.*)",
+  "/saved-jobs(.*)",
+  "/applications(.*)",
+  "/admin(.*)",
+]);
 
 const clerkProxy = clerkMiddleware(
   async (auth, req) => {

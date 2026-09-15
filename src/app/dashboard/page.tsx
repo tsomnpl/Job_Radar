@@ -2,11 +2,11 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Pill, ScoreRing } from "@/components/brand";
 import { RadarJobList } from "@/components/radar-job-list";
-import { AuthCallout, PageSkeleton } from "@/components/page-shell";
+import { PageSkeleton } from "@/components/page-shell";
 import { ProfileQuickForm } from "@/components/profile-quick-form";
 import { getSessionUser, isPersistedUser } from "@/lib/auth";
 import { withDb } from "@/lib/db";
-import { isClerkConfigured } from "@/lib/env";
+import { requirePageUser } from "@/lib/page-guard";
 import { asJsonArray } from "@/lib/normalize";
 import { prisma } from "@/lib/prisma";
 import { parseIntentHeuristic } from "@/lib/intent";
@@ -16,18 +16,17 @@ import { withTimeout } from "@/lib/timeout";
 
 export const dynamic = "force-dynamic";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  await requirePageUser("/dashboard");
   return (
     <div className="space-y-8">
       <div>
         <p className="text-xs uppercase tracking-[0.2em] text-accent">Compte</p>
         <h1 className="mt-2 text-3xl font-semibold">Votre radar</h1>
         <p className="mt-2 text-muted">
-          Profil, recherches, offres sauvegardées et candidatures.
+          Profil, recherches, offres sauvegardées, candidatures et matchs.
         </p>
       </div>
-
-      <AuthCallout next="/dashboard" clerkEnabled={isClerkConfigured()} />
 
       <section className="panel p-6">
         <h2 className="font-semibold">Mon profil (à remplir)</h2>
@@ -47,7 +46,7 @@ export default function DashboardPage() {
 async function DashboardData() {
   const user = await getSessionUser();
   const canPersist = Boolean(user && isPersistedUser(user));
-  const [profile, searches, saved] = await Promise.all([
+  const [profile, searches, saved, applications, notifications] = await Promise.all([
     canPersist
       ? withTimeout(
           withDb("dashboard.profile", () => prisma.profile.findUnique({ where: { userId: user!.id } }), null),
@@ -83,6 +82,39 @@ async function DashboardData() {
           [],
         )
       : Promise.resolve([]),
+    canPersist
+      ? withTimeout(
+          withDb(
+            "dashboard.applications",
+            () =>
+              prisma.application.findMany({
+                where: { userId: user!.id },
+                include: { job: true },
+                orderBy: { createdAt: "desc" },
+                take: 8,
+              }),
+            [],
+          ),
+          2500,
+          [],
+        )
+      : Promise.resolve([]),
+    canPersist
+      ? withTimeout(
+          withDb(
+            "dashboard.notifications",
+            () =>
+              prisma.notification.findMany({
+                where: { userId: user!.id },
+                orderBy: { createdAt: "desc" },
+                take: 6,
+              }),
+            [],
+          ),
+          2500,
+          [],
+        )
+      : Promise.resolve([]),
   ]);
 
   const stock = await withTimeout(listStockJobs(), 2500, []);
@@ -99,9 +131,6 @@ async function DashboardData() {
       )
     : [];
 
-  const applications = saved.filter(
-    (item) => item.status === "applied" || item.status === "interviewing" || item.status === "offer",
-  );
   const alerts = ranked.filter((job) => job.match.score >= 70).slice(0, 4);
   const skills = asJsonArray(profile?.skillsJson);
   const empty =
@@ -127,9 +156,11 @@ async function DashboardData() {
             <Link href="/search" className="rounded-full border border-line px-4 py-2 text-sm font-semibold">
               Lancer une recherche
             </Link>
-            <Link href="/admin" className="rounded-full border border-line px-4 py-2 text-sm font-semibold">
-              Importer des offres
-            </Link>
+            {user?.role === "ADMIN" ? (
+              <Link href="/admin" className="rounded-full border border-line px-4 py-2 text-sm font-semibold">
+                Admin
+              </Link>
+            ) : null}
           </div>
         </section>
       ) : null}
@@ -220,12 +251,29 @@ async function DashboardData() {
                 title: item.job.title,
                 company: item.job.company,
                 status: item.status,
+                date: item.createdAt.toISOString().slice(0, 10),
               }))}
               empty="0 — aucune candidature."
             />
           </div>
         </section>
       </div>
+
+      <section className="panel p-6">
+        <h2 className="font-semibold">Notifications</h2>
+        {notifications.length ? (
+          <ul className="mt-4 space-y-3 text-sm">
+            {notifications.map((item) => (
+              <li key={item.id} className="border-b border-line pb-3 last:border-0">
+                <p className="font-medium">{item.title}</p>
+                <p className="text-muted">{item.body}</p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-3 text-sm text-muted">Aucune notification.</p>
+        )}
+      </section>
 
       <section className="panel p-6">
         <div className="flex items-center justify-between">
@@ -235,6 +283,7 @@ async function DashboardData() {
           </Link>
         </div>
         <p className="mt-2 text-sm text-muted">{profile?.headline ?? "Aucun CV importé."}</p>
+        <p className="mt-1 text-xs text-muted">{profile?.education || "Formation : Not specified"}</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {skills.map((skill) => (
             <Pill key={skill}>{skill}</Pill>

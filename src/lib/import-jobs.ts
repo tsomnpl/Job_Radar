@@ -1,9 +1,12 @@
 import { fingerprintJob, parseContractType, parseRemoteType, parseSeniority, parseSkillList } from "./normalize";
+import { officialApplicationUrl, officialLogoUrl } from "./jobs";
+import { parseOptionalDate } from "./job-lifecycle";
 import type { JobInput } from "./types";
 
 export type NormalizedJobInput = {
   title: string;
   company: string;
+  companyLogo: string | null;
   location: string;
   country: string | null;
   remoteType: string;
@@ -15,10 +18,20 @@ export type NormalizedJobInput = {
   skillsJson: string;
   languagesJson: string;
   description: string;
+  requirements: string | null;
+  education: string | null;
+  experience: string | null;
+  benefits: string | null;
+  duration: string | null;
+  contactInfo: string | null;
   sourceUrl: string | null;
+  applicationUrl: string | null;
   source: string;
   language: string;
   postedAt: Date;
+  deadline: Date | null;
+  startDate: Date | null;
+  endDate: Date | null;
   fingerprint: string;
 };
 
@@ -29,12 +42,14 @@ function asNumber(value: unknown): number | null {
 }
 
 function asDate(value: unknown): Date {
-  if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
-  if (typeof value === "string" && value.trim()) {
-    const parsed = new Date(value);
-    if (!Number.isNaN(parsed.getTime())) return parsed;
-  }
-  return new Date();
+  const parsed = parseOptionalDate(value as string | Date | null);
+  return parsed ?? new Date();
+}
+
+function optionalText(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed && trimmed.toLowerCase() !== "not specified" ? trimmed : null;
 }
 
 function splitCsvLine(line: string): string[] {
@@ -88,25 +103,42 @@ export function normalizeJobInput(input: JobInput): NormalizedJobInput {
     throw new Error("JOB_FIELDS_REQUIRED");
   }
 
+  const sourceUrl = officialApplicationUrl(input.sourceUrl);
+  const applicationUrl = officialApplicationUrl(input.applicationUrl) ?? sourceUrl;
+  const salaryMin = asNumber(input.salaryMin);
+  const salaryMax = asNumber(input.salaryMax);
+  const currency = salaryMin == null && salaryMax == null ? (input.currency?.trim() || "") : (input.currency?.trim() || "");
+
   return {
     title,
     company,
+    companyLogo: officialLogoUrl(input.companyLogo),
     location,
     country: input.country?.trim() || null,
-    remoteType: parseRemoteType(input.remoteType) ?? "hybrid",
-    contractType: parseContractType(input.contractType) ?? "cdi",
-    seniority: parseSeniority(input.seniority) ?? "mid",
-    salaryMin: asNumber(input.salaryMin),
-    salaryMax: asNumber(input.salaryMax),
-    currency: input.currency?.trim() || "XOF",
+    remoteType: parseRemoteType(input.remoteType) ?? "unspecified",
+    contractType: parseContractType(input.contractType) ?? "other",
+    seniority: parseSeniority(input.seniority) ?? "unspecified",
+    salaryMin,
+    salaryMax,
+    currency,
     skillsJson: JSON.stringify(parseSkillList(input.skills)),
     languagesJson: JSON.stringify(parseSkillList(input.languages)),
     description: input.description.trim(),
-    sourceUrl: input.sourceUrl?.trim() || null,
+    requirements: optionalText(input.requirements),
+    education: optionalText(input.education),
+    experience: optionalText(input.experience) ?? (parseSeniority(input.seniority) && parseSeniority(input.seniority) !== "unspecified" ? parseSeniority(input.seniority) : null),
+    benefits: optionalText(input.benefits),
+    duration: optionalText(input.duration),
+    contactInfo: optionalText(input.contactInfo),
+    sourceUrl,
+    applicationUrl,
     source: input.source?.trim() || "manual",
-    language: input.language?.trim() || "fr",
+    language: input.language?.trim() || "",
     postedAt: asDate(input.postedAt),
-    fingerprint: fingerprintJob({ title, company, location, sourceUrl: input.sourceUrl }),
+    deadline: parseOptionalDate(input.deadline),
+    startDate: parseOptionalDate(input.startDate),
+    endDate: parseOptionalDate(input.endDate),
+    fingerprint: fingerprintJob({ title, company, location, sourceUrl: sourceUrl ?? input.sourceUrl }),
   };
 }
 
@@ -122,20 +154,31 @@ export function jobsFromCsv(text: string): JobInput[] {
   return parseCsv(text).map((row) => ({
     title: row.title || row.intitule || row.poste || "",
     company: row.company || row.entreprise || "",
+    companyLogo: row.companyLogo || row.logo || null,
     location: row.location || row.ville || row.lieu || "",
     country: row.country || row.pays || null,
     remoteType: row.remoteType || row.modalite || row.remote || null,
-    contractType: row.contractType || row.contrat || null,
+    contractType: row.contractType || row.contrat || row.opportunityType || null,
     seniority: row.seniority || row.niveau || null,
     salaryMin: asNumber(row.salaryMin || row.salaireMin),
     salaryMax: asNumber(row.salaryMax || row.salaireMax),
-    currency: row.currency || row.devise || "XOF",
+    currency: row.currency || row.devise || "",
     skills: row.skills || row.competences || "",
     languages: row.languages || row.langues || "",
     description: row.description || row.descriptif || "",
+    requirements: row.requirements || row.requis || null,
+    education: row.education || null,
+    experience: row.experience || null,
+    benefits: row.benefits || row.avantages || null,
+    duration: row.duration || row.duree || null,
+    contactInfo: row.contactInfo || row.contact || null,
     sourceUrl: row.sourceUrl || row.url || null,
+    applicationUrl: row.applicationUrl || row.applyUrl || null,
     source: row.source || "csv",
-    language: row.language || row.langue || "fr",
-    postedAt: row.postedAt || row.date || null,
+    language: row.language || row.langue || "",
+    postedAt: row.postedAt || row.date || row.publishedAt || null,
+    deadline: row.deadline || row.dateLimite || null,
+    startDate: row.startDate || null,
+    endDate: row.endDate || null,
   }));
 }

@@ -39,8 +39,8 @@ Parcours une fois le compte chargé :
 2. Après inscription / connexion, redirection vers **`/dashboard`**.
 3. Un utilisateur Prisma est créé (`clerkUserId`). **Profil, CV, offres, candidatures = 0.**
 4. Les pages restent visibles sans session. La sauvegarde (CV, radar, admin import) exige un compte.
-5. Si `ADMIN_CLERK_USER_IDS` est **vide**, tout compte connecté est admin (MVP). Sinon seuls les IDs listés le sont.
-6. Sans clés Clerk, mode démo local (un profil admin `demo_local_user`).
+5. Si `ADMIN_EMAIL` n’est **pas** configuré (et `ADMIN_CLERK_USER_IDS` vide), **personne n’est admin**. L’email Clerk vérifié doit correspondre à `ADMIN_EMAIL`.
+6. Sans clés Clerk, mode local (profil `demo_local_user`, rôle USER sauf si `ADMIN_EMAIL=demo@jobradar.local`).
 
 État réel : `GET /api/status` (aucune clé n’est renvoyée). `clerk.developmentAuthUsable` vs `clerk.productionReady`.
 
@@ -56,9 +56,8 @@ Pas de mailer maison. Service unique `src/server/email.ts` (import `server-only`
 
 ## 3. Données : tout part de zéro
 
-- **Plus de 20 offres seed** au démarrage. `prepare-db` fait seulement `prisma migrate deploy`.
-- Une migration **dépublie** les offres `source = seed` et `source = ai-proposal` déjà en base.
-- `npm run db:seed` existe encore **si vous voulez** recharger un échantillon, ce n’est **pas** automatique.
+- Le seed fictif **n’est plus chargé**. Une migration **supprime** les offres `source = seed`, `id LIKE cat_%` et `ai-proposal`.
+- `npm run db:seed` refuse de recréer le catalogue. Ajoutez de vraies opportunités depuis Admin.
 - Dashboard / Offres / Landing affichent **0** tant qu’aucune offre réelle n’est collectée ou importée.
 - **Sources réelles** :
   - Recherche : Jobicy, Remote OK, Remotive, The Muse (stages), Himalayas. Seules les offres avec titre, entreprise, description et URL `http(s)` officielle sont gardées.

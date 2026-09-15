@@ -20,10 +20,12 @@
   "dependencies": {
     "@clerk/nextjs": "^6.39.6",
     "@prisma/client": "^6.19.3",
+    "mammoth": "^1.12.3",
     "next": "16.3.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "resend": "^6.28.1",
+    "unpdf": "^1.8.1",
     "zod": "^4.6.5"
   },
   "devDependencies": {

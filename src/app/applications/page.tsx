@@ -5,12 +5,14 @@ import { AuthCallout, PageSkeleton } from "@/components/page-shell";
 import { getSessionUser, isPersistedUser } from "@/lib/auth";
 import { withDb } from "@/lib/db";
 import { isClerkConfigured } from "@/lib/env";
+import { requirePageUser } from "@/lib/page-guard";
 import { prisma } from "@/lib/prisma";
 import { withTimeout } from "@/lib/timeout";
 
 export const dynamic = "force-dynamic";
 
-export default function ApplicationsPage() {
+export default async function ApplicationsPage() {
+  await requirePageUser("/applications");
   return (
     <div className="space-y-6">
       <div>
@@ -39,11 +41,8 @@ async function ApplicationsList() {
           withDb(
             "applicationsPage",
             () =>
-              prisma.savedJob.findMany({
-                where: {
-                  userId: user.id,
-                  status: { in: ["applied", "interviewing", "offer"] },
-                },
+              prisma.application.findMany({
+                where: { userId: user.id },
                 include: { job: true },
                 orderBy: { createdAt: "desc" },
                 take: 50,
@@ -64,8 +63,9 @@ async function ApplicationsList() {
           title: item.job.title,
           company: item.job.company,
           status: item.status,
+          date: item.createdAt.toISOString().slice(0, 10),
         }))}
-        empty="Aucune candidature. Sur une offre vérifiée, Apply ouvre le site officiel et enregistre le suivi."
+        empty="Aucune candidature. Sur une offre, Postuler maintenant ouvre le site officiel et enregistre le statut Postulé."
       />
     </section>
   );

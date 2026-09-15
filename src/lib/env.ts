@@ -96,6 +96,37 @@ export function adminClerkIds(): string[] {
     .filter(Boolean);
 }
 
+/** Fail-closed admin email. Empty/invalid ADMIN_EMAIL → nobody is admin. */
+export function adminEmail(): string | null {
+  const value = process.env.ADMIN_EMAIL?.trim().toLowerCase() ?? "";
+  if (!value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return null;
+  return value;
+}
+
+export function isAdminEmail(email: string | null | undefined): boolean {
+  const configured = adminEmail();
+  if (!configured) return false;
+  return (email?.trim().toLowerCase() ?? "") === configured;
+}
+
+export function isAdminDisabled(): boolean {
+  return adminEmail() == null && adminClerkIds().length === 0;
+}
+
+export function isConfiguredAdmin(input: {
+  email?: string | null;
+  verifiedEmails?: string[];
+  clerkUserId?: string | null;
+}): boolean {
+  const emails = [
+    ...(input.verifiedEmails ?? []),
+    ...(input.email ? [input.email] : []),
+  ];
+  if (emails.some((value) => isAdminEmail(value))) return true;
+  const ids = adminClerkIds();
+  return Boolean(input.clerkUserId && ids.includes(input.clerkUserId));
+}
+
 export function isRodiumConfigured(): boolean {
   return Boolean(process.env.RODIUMAI_API_KEY?.trim());
 }

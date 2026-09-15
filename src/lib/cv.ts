@@ -136,12 +136,17 @@ export function parseCvHeuristic(cvText: string): ParsedCv {
   const yearsExperience = extractYears(text);
   const summary = text.slice(0, 500);
 
+  const educationMatch = text.match(
+    /(?:formation|education|dipl[oô]me|degree|master|licence|bachelor|phd)[:\s-]+([^\n]{4,80})/i,
+  );
+
   return {
     headline: extractHeadline(text),
     summary,
     skills: unique(skills),
     languages: unique(languages),
     locations: unique(locations),
+    education: educationMatch?.[1]?.trim() ?? null,
     seniority: inferSeniority(yearsExperience, text),
     yearsExperience,
     remotePreference: parseRemoteType(text),
@@ -168,6 +173,7 @@ export function parseCvFromJson(cvText: string, payload: unknown): ParsedCv | nu
     skills: unique(skills.map((item) => fold(item))),
     languages: unique(languages.map((item) => fold(item))),
     locations: unique(locations),
+    education: typeof data.education === "string" ? data.education : null,
     seniority: parseSeniority(typeof data.seniority === "string" ? data.seniority : null),
     yearsExperience: years != null && Number.isFinite(years) ? years : extractYears(cvText),
     remotePreference: parseRemoteType(typeof data.remotePreference === "string" ? data.remotePreference : cvText),
