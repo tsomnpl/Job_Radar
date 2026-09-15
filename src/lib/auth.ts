@@ -2,6 +2,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { adminClerkIds, isClerkConfigured } from "@/lib/env";
 import { logDbError } from "@/lib/db";
 import { prisma } from "@/lib/prisma";
+import { withTimeout } from "@/lib/timeout";
 
 export const DEMO_CLERK_ID = "demo_local_user";
 
@@ -90,12 +91,16 @@ async function upsertAppUser(input: {
 
 export async function getDemoUser(): Promise<AppUser> {
   try {
-    return await upsertAppUser({
-      clerkUserId: DEMO_CLERK_ID,
-      email: "demo@jobradar.local",
-      name: "Profil démo",
-      role: "ADMIN",
-    });
+    return await withTimeout(
+      upsertAppUser({
+        clerkUserId: DEMO_CLERK_ID,
+        email: "demo@jobradar.local",
+        name: "Profil démo",
+        role: "ADMIN",
+      }),
+      2500,
+      EPHEMERAL_DEMO,
+    );
   } catch (error) {
     logDbError("getDemoUser", error);
     return EPHEMERAL_DEMO;
@@ -108,7 +113,7 @@ export async function getSessionUser(): Promise<AppUser | null> {
       return getDemoUser();
     }
 
-    const clerkUser = await currentUser();
+    const clerkUser = await withTimeout(currentUser(), 2500, null);
     if (!clerkUser) return null;
 
     const email = clerkUser.emailAddresses[0]?.emailAddress ?? null;
@@ -118,12 +123,16 @@ export async function getSessionUser(): Promise<AppUser | null> {
     const role = allowlist.length === 0 || allowlist.includes(clerkUser.id) ? "ADMIN" : "USER";
 
     try {
-      return await upsertAppUser({
-        clerkUserId: clerkUser.id,
-        email,
-        name,
-        role,
-      });
+      return await withTimeout(
+        upsertAppUser({
+          clerkUserId: clerkUser.id,
+          email,
+          name,
+          role,
+        }),
+        2500,
+        ephemeralFromClerk({ clerkUserId: clerkUser.id, email, name, role }),
+      );
     } catch (error) {
       logDbError("upsertAppUser", error);
       return ephemeralFromClerk({ clerkUserId: clerkUser.id, email, name, role });

@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { Pill, ScoreRing } from "@/components/brand";
 import { RadarJobList } from "@/components/radar-job-list";
+import { AuthCallout, PageSkeleton } from "@/components/page-shell";
 import { ProfileQuickForm } from "@/components/profile-quick-form";
 import { getSessionUser, isPersistedUser } from "@/lib/auth";
 import { withDb } from "@/lib/db";
@@ -11,48 +12,92 @@ import { prisma } from "@/lib/prisma";
 import { parseIntentHeuristic } from "@/lib/intent";
 import { rankJobsForUser } from "@/server/rank";
 import { listStockJobs } from "@/server/jobs-store";
+import { withTimeout } from "@/lib/timeout";
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
-  const user = await getSessionUser();
-  if (!user && isClerkConfigured()) redirect("/sign-in");
+export default function DashboardPage() {
+  return (
+    <div className="space-y-8">
+      <div>
+        <p className="text-xs uppercase tracking-[0.2em] text-accent">Compte</p>
+        <h1 className="mt-2 text-3xl font-semibold">Votre radar</h1>
+        <p className="mt-2 text-muted">
+          Profil, CV, offres sauvegardées et candidatures. Les chiffres se remplissent quand Clerk / Postgres
+          répondent — JobRadar n&apos;invente pas d&apos;offre en attendant.
+        </p>
+      </div>
 
+      <AuthCallout next="/dashboard" clerkEnabled={isClerkConfigured()} />
+
+      <section className="panel p-6">
+        <h2 className="font-semibold">Mon profil (à remplir)</h2>
+        <p className="mt-2 text-sm text-muted">Sans ça, le matching n&apos;a pas de compétences à comparer.</p>
+        <div className="mt-4">
+          <ProfileQuickForm />
+        </div>
+      </section>
+
+      <Suspense fallback={<PageSkeleton title="Chargement du compte…" />}>
+        <DashboardData />
+      </Suspense>
+    </div>
+  );
+}
+
+async function DashboardData() {
+  const user = await getSessionUser();
   const canPersist = Boolean(user && isPersistedUser(user));
   const [profile, searches, saved] = await Promise.all([
     canPersist
-      ? withDb("dashboard.profile", () => prisma.profile.findUnique({ where: { userId: user!.id } }), null)
+      ? withTimeout(
+          withDb("dashboard.profile", () => prisma.profile.findUnique({ where: { userId: user!.id } }), null),
+          2500,
+          null,
+        )
       : Promise.resolve(null),
     canPersist
-      ? withDb(
-          "dashboard.searches",
-          () => prisma.search.findMany({ where: { userId: user!.id }, orderBy: { createdAt: "desc" }, take: 6 }),
+      ? withTimeout(
+          withDb(
+            "dashboard.searches",
+            () => prisma.search.findMany({ where: { userId: user!.id }, orderBy: { createdAt: "desc" }, take: 6 }),
+            [],
+          ),
+          2500,
           [],
         )
       : Promise.resolve([]),
     canPersist
-      ? withDb(
-          "dashboard.saved",
-          () =>
-            prisma.savedJob.findMany({
-              where: { userId: user!.id },
-              include: { job: true },
-              orderBy: { createdAt: "desc" },
-              take: 8,
-            }),
+      ? withTimeout(
+          withDb(
+            "dashboard.saved",
+            () =>
+              prisma.savedJob.findMany({
+                where: { userId: user!.id },
+                include: { job: true },
+                orderBy: { createdAt: "desc" },
+                take: 8,
+              }),
+            [],
+          ),
+          2500,
           [],
         )
       : Promise.resolve([]),
   ]);
 
-  const stock = await listStockJobs();
+  const stock = await withTimeout(listStockJobs(), 2500, []);
   const radarQuery = searches[0]?.query || profile?.headline || "";
   const ranked = stock.length
-    ? await rankJobsForUser({
-        intent: parseIntentHeuristic(radarQuery || "opportunités"),
-        userId: user?.id,
-        limit: 6,
-      })
+    ? await withTimeout(
+        rankJobsForUser({
+          intent: parseIntentHeuristic(radarQuery || "opportunités"),
+          userId: user?.id,
+          limit: 6,
+        }),
+        2500,
+        [],
+      )
     : [];
 
   const applications = saved.filter(
@@ -64,22 +109,17 @@ export default async function DashboardPage() {
     stock.length === 0 && saved.length === 0 && searches.length === 0 && !profile?.cvText && skills.length === 0;
 
   return (
-    <div className="space-y-8">
-      <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-accent">Compte</p>
-        <h1 className="mt-2 text-3xl font-semibold">
-          {empty ? "Compte prêt — tout est à zéro" : "Voici les opportunités que JobRadar a trouvées pour vous"}
-        </h1>
-        <p className="mt-2 text-muted">
-          {user?.name ?? "Profil"} · {user?.isDemo ? "session démo" : user?.email}
-        </p>
-      </div>
+    <>
+      <p className="text-sm text-muted">
+        {user?.name ?? "Profil"} · {user?.isDemo ? "session démo" : user?.email ?? "pas encore connecté"}
+      </p>
 
       {empty ? (
         <section className="panel space-y-4 p-6">
           <p className="text-sm text-muted">
-            Aucune offre vérifiée, aucun CV, aucune candidature. Remplissez votre profil, importez de vraies offres en
-            admin, ou lancez une recherche — s&apos;il n&apos;y a rien, JobRadar n&apos;inventera pas d&apos;offre.
+            Aucune offre vérifiée, aucun CV, aucune candidature. Remplissez votre profil, importez de vraies
+            offres en admin, ou lancez une recherche — s&apos;il n&apos;y a rien, JobRadar n&apos;inventera pas
+            d&apos;offre.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link href="/cv" className="btn-primary rounded-full px-4 py-2 text-sm font-semibold">
@@ -118,19 +158,6 @@ export default async function DashboardPage() {
           <p className="text-xs uppercase tracking-[0.18em] text-muted">Alertes</p>
           <p className="mt-3 text-3xl font-semibold">{alerts.length}</p>
         </article>
-      </section>
-
-      <section className="panel p-6">
-        <h2 className="font-semibold">Mon profil (à remplir)</h2>
-        <p className="mt-2 text-sm text-muted">Sans ça, le matching n&apos;a pas de compétences à comparer.</p>
-        <div className="mt-4">
-          <ProfileQuickForm
-            initialHeadline={profile?.headline ?? ""}
-            initialSkills={skills.join(", ")}
-            initialLocations={asJsonArray(profile?.locationsJson).join(", ")}
-            initialSeniority={profile?.seniority ?? ""}
-          />
-        </div>
       </section>
 
       <section className="panel p-6">
@@ -228,6 +255,6 @@ export default async function DashboardPage() {
           <p className="mt-3 text-sm text-muted">0 recherche enregistrée.</p>
         )}
       </section>
-    </div>
+    </>
   );
 }

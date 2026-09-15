@@ -1,19 +1,21 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
 import { Pill, ScoreRing } from "@/components/brand";
 import { SearchBox } from "@/components/search-box";
 import { formatOpportunityType } from "@/lib/jobs";
 import { isClerkConfigured } from "@/lib/env";
-import { getSessionUser } from "@/lib/auth";
-import { rankJobsForUser } from "@/server/rank";
 import { parseIntentHeuristic } from "@/lib/intent";
+import { rankJobsForUser } from "@/server/rank";
 import { listStockJobs } from "@/server/jobs-store";
+import { withTimeout } from "@/lib/timeout";
 
 const EXAMPLES = [
   "stage data remote Cotonou",
   "CDI product designer Accra hybride",
   "mission consulting ONU francophone",
   "stage ONG Lomé",
+  "internship cybersecurity remote",
 ];
 
 const CATEGORIES = [
@@ -25,21 +27,11 @@ const CATEGORIES = [
   { label: "International", q: "ONU UNICEF PNUD" },
 ];
 
-const SOURCES = ["Entreprises", "ONG", "ONU", "UNICEF", "PNUD", "Job boards", "RSS / APIs publiques"];
+const SOURCES = ["Jobicy", "Remote OK", "Remotive", "The Muse", "Himalayas", "ONG / ONU (import admin)"];
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
-  const user = await getSessionUser();
-  const stock = await listStockJobs();
-  const preview = stock.length
-    ? await rankJobsForUser({
-        intent: parseIntentHeuristic("opportunités"),
-        userId: user?.id,
-        limit: 3,
-        minScore: 0,
-      })
-    : [];
+export default function HomePage() {
   const clerkEnabled = isClerkConfigured();
 
   return (
@@ -76,6 +68,9 @@ export default async function HomePage() {
               )}
               <Link href="/jobs" className="rounded-full border border-line px-5 py-2.5 text-sm font-semibold">
                 Voir les opportunités
+              </Link>
+              <Link href="/cv" className="rounded-full border border-line px-5 py-2.5 text-sm font-semibold">
+                Mon CV
               </Link>
             </div>
           </div>
@@ -114,27 +109,13 @@ export default async function HomePage() {
             Tout voir
           </Link>
         </div>
-        {preview.length ? (
-          <div className="grid gap-4">
-            {preview.map((job) => (
-              <Link key={job.id} href={`/jobs/${job.id}`} className="panel flex items-center justify-between gap-4 p-5">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.16em] text-muted">{job.company}</p>
-                  <h3 className="mt-1 font-semibold">{job.title}</h3>
-                  <p className="mt-1 text-sm text-muted">
-                    {job.location} · {formatOpportunityType(job.contractType)}
-                  </p>
-                </div>
-                <ScoreRing score={job.match.score} />
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <div className="panel p-6 text-sm text-muted">
-            No opportunities found. We couldn&apos;t find verified opportunities to preview. JobRadar will not invent
-            offers. Import a real posting in Admin, or search with broader criteria.
-          </div>
-        )}
+        <Suspense
+          fallback={
+            <div className="panel p-6 text-sm text-muted">Chargement des offres vérifiées (sans inventer)…</div>
+          }
+        >
+          <HomeJobPreview />
+        </Suspense>
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">
@@ -162,8 +143,7 @@ export default async function HomePage() {
       <section className="panel p-6 md:p-8">
         <h2 className="text-2xl font-semibold">Sources du radar</h2>
         <p className="mt-3 max-w-2xl text-sm text-muted">
-          Entreprises, ONG, organisations internationales et job boards légalement accessibles. Pas de contournement
-          anti-bot. LinkedIn n&apos;est pas la seule source.
+          Job boards publics avec URL officielle uniquement. Pas de fausse offre, pas de scrape LinkedIn.
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
           {SOURCES.map((source) => (
@@ -171,6 +151,57 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+    </div>
+  );
+}
+
+async function HomeJobPreview() {
+  const stock = await withTimeout(listStockJobs(), 2500, []);
+  const preview = stock.length
+    ? await withTimeout(
+        rankJobsForUser({
+          intent: parseIntentHeuristic("opportunités"),
+          limit: 3,
+          minScore: 0,
+        }),
+        2500,
+        [],
+      )
+    : [];
+
+  if (!preview.length) {
+    return (
+      <div className="panel space-y-3 p-6">
+        <p className="font-semibold">Aucune offre vérifiée en vitrine pour l&apos;instant</p>
+        <p className="text-sm text-muted">
+          JobRadar n&apos;invente pas d&apos;entreprise. Lancez une recherche, ou importez une vraie offre en Admin.
+        </p>
+        <div className="flex flex-wrap gap-3 pt-1">
+          <Link href="/search" className="btn-primary rounded-full px-4 py-2 text-sm font-semibold">
+            Rechercher
+          </Link>
+          <Link href="/admin" className="rounded-full border border-line px-4 py-2 text-sm font-semibold">
+            Ouvrir Admin
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-4">
+      {preview.map((job) => (
+        <Link key={job.id} href={`/jobs/${job.id}`} className="panel flex items-center justify-between gap-4 p-5">
+          <div>
+            <p className="text-xs uppercase tracking-[0.16em] text-muted">{job.company}</p>
+            <h3 className="mt-1 font-semibold">{job.title}</h3>
+            <p className="mt-1 text-sm text-muted">
+              {job.location} · {formatOpportunityType(job.contractType)}
+            </p>
+          </div>
+          <ScoreRing score={job.match.score} />
+        </Link>
+      ))}
     </div>
   );
 }
