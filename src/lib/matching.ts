@@ -1,4 +1,5 @@
 import { fold, normalizeSkill, unique } from "./normalize";
+import { hasInternTitle } from "./jobs";
 import { isUnrestrictedRemoteLocation, placesCompatible } from "./places";
 import { tokenMatchesHaystack } from "./synonyms";
 import type {
@@ -19,6 +20,18 @@ export function selectVerifiedMatches<T extends { source: string; match: { score
   return jobs.filter(
     (job) => job.source !== "ai-proposal" && !job.source.startsWith("ai/") && job.match.score >= minScore,
   );
+}
+
+export function jobFitsSearchIntent(job: Pick<JobRecord, "title" | "source">, intent: SearchIntent): boolean {
+  if (!isVerifiedOpportunitySource(job.source)) return false;
+  if (intent.contractType === "internship" || intent.seniority === "intern") {
+    return hasInternTitle(job.title);
+  }
+  return true;
+}
+
+function isVerifiedOpportunitySource(source: string): boolean {
+  return source !== "ai-proposal" && !source.startsWith("ai/");
 }
 
 const WEIGHTS = {

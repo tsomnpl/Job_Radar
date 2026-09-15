@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { officialApplicationUrl, isVerifiedOpportunity, displayField, NOT_SPECIFIED } from "@/lib/jobs";
+import { officialApplicationUrl, isVerifiedOpportunity, displayField, hasInternTitle, NOT_SPECIFIED } from "@/lib/jobs";
 import { selectVerifiedMatches } from "@/lib/matching";
 
 describe("officialApplicationUrl", () => {
@@ -24,6 +24,12 @@ describe("verified opportunities", () => {
     expect(isVerifiedOpportunity({ source: "extract" })).toBe(true);
     expect(isVerifiedOpportunity({ source: "jobicy" })).toBe(true);
     expect(isVerifiedOpportunity({ source: "remoteok" })).toBe(true);
+  });
+
+  it("detects internships from the title only", () => {
+    expect(hasInternTitle("Cybersecurity Intern")).toBe(true);
+    expect(hasInternTitle("Healthcare Virtual Assistant")).toBe(false);
+    expect(hasInternTitle("International Sales Lead")).toBe(false);
   });
 
   it("drops invented and weak matches from search results", () => {

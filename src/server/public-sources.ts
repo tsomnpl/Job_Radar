@@ -1,5 +1,5 @@
 import { stripHtml } from "@/lib/html";
-import { NOT_SPECIFIED, officialApplicationUrl } from "@/lib/jobs";
+import { hasInternTitle, NOT_SPECIFIED, officialApplicationUrl } from "@/lib/jobs";
 import { isUnrestrictedRemoteLocation, placesCompatible } from "@/lib/places";
 import { fold, parseContractType, parseSeniority, parseSkillList, tokenize, unique } from "@/lib/normalize";
 import { tokenMatchesHaystack } from "@/lib/synonyms";
@@ -34,6 +34,17 @@ export type PublicOpportunity = {
   language: "en";
   postedAt: Date;
 };
+
+const REMOTEOK_META_TAGS = new Set([
+  "digital nomad",
+  "non tech",
+  "full time",
+  "part time",
+  "internship",
+  "intern",
+  "exec",
+  "legal",
+]);
 
 const STOP_TOKENS = new Set([
   "cherche",
@@ -208,11 +219,9 @@ export function parseRemoteOkPayload(payload: unknown): PublicOpportunity[] {
       title: asString(job.position) || asString(job.title),
       company: asString(job.company),
       location: locationFrom(job.location),
-      typeBlob: asStringList(job.tags).join(" "),
-      levelBlob: asStringList(job.tags).join(" "),
       description: asString(job.description),
       sourceUrl: firstUrl(job.apply_url, job.url),
-      skills: asStringList(job.tags),
+      skills: asStringList(job.tags).filter((tag) => !REMOTEOK_META_TAGS.has(fold(tag))),
       salaryMin: asFiniteNumber(job.salary_min),
       salaryMax: asFiniteNumber(job.salary_max),
       currency: "USD",
@@ -250,8 +259,7 @@ export function parseRemotivePayload(payload: unknown): PublicOpportunity[] {
 }
 
 function isInternSignal(job: PublicOpportunity): boolean {
-  const haystack = fold(`${job.title} ${job.contractType} ${job.seniority} ${job.description.slice(0, 400)}`);
-  return /(?:^|[^a-z])(?:interns?|internship|stage|stagiaire|trainee|apprentice)(?:[^a-z]|$)/.test(haystack);
+  return hasInternTitle(job.title);
 }
 
 function roleTokensFromIntent(intent: SearchIntent): string[] {

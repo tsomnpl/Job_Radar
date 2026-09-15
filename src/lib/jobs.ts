@@ -69,6 +69,13 @@ export function isVerifiedOpportunity(job: { source: string }): boolean {
   return job.source !== "ai-proposal" && !job.source.startsWith("ai/");
 }
 
+/** Internship searches must match the title, not a noisy board tag. */
+export function hasInternTitle(title: string): boolean {
+  return /(?:^|[^a-z])(?:interns?|internship|stage|stagiaire|trainee|apprentice)(?:[^a-z]|$)/.test(
+    title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(),
+  );
+}
+
 export function formatSalary(min: number | null, max: number | null, currency: string): string | null {
   if (min == null && max == null) return null;
   const formatter = new Intl.NumberFormat("fr-FR");
