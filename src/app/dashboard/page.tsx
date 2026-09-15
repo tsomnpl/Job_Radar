@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { Pill, ScoreRing } from "@/components/brand";
 import { RadarJobList } from "@/components/radar-job-list";
 import { PageSkeleton } from "@/components/page-shell";
-import { ProfileQuickForm } from "@/components/profile-quick-form";
+import { ProfileEditor } from "@/components/profile-editor";
 import { getSessionUser, isPersistedUser } from "@/lib/auth";
 import { withDb } from "@/lib/db";
 import { requirePageUser } from "@/lib/page-guard";
@@ -32,7 +32,7 @@ export default async function DashboardPage() {
         <h2 className="font-semibold">Mon profil (à remplir)</h2>
         <p className="mt-2 text-sm text-muted">Sans ça, le matching n&apos;a pas de compétences à comparer.</p>
         <div className="mt-4">
-          <ProfileQuickForm />
+          <ProfileEditor />
         </div>
       </section>
 

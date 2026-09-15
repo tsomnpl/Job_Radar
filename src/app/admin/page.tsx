@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AdminJobActions } from "@/components/admin-job-actions";
+import { AdminUserActions } from "@/components/admin-user-actions";
 import { AdminRadarForms } from "@/components/admin-extract-form";
 import { ImportForm } from "@/components/import-form";
 import { getAdminOrNull } from "@/lib/admin-page";
@@ -114,6 +115,8 @@ export default async function AdminPage({
           </Link>
         </p>
       ) : null}
+
+      {tab === "users" ? <AdminUsersTable currentUserId={admin.id} /> : null}
     </div>
   );
 }
@@ -153,5 +156,63 @@ function OpportunityTable({
         ))}
       </tbody>
     </table>
+  );
+}
+
+async function AdminUsersTable({ currentUserId }: { currentUserId: string }) {
+  const users = await withTimeout(
+    prisma.user.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 200,
+      include: { profile: { select: { id: true } } },
+    }),
+    2500,
+    [],
+  );
+
+  if (!users.length) {
+    return (
+      <section className="panel p-6">
+        <p className="text-sm text-muted">Aucun utilisateur JobRadar.</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="panel overflow-x-auto p-6">
+      <h2 className="mb-4 font-semibold">Users</h2>
+      <p className="mb-4 text-sm text-muted">
+        Delete profile enlève le CV / headline. Delete user data enlève les données JobRadar. Le compte Clerk
+        n&apos;est pas supprimé.
+      </p>
+      <table className="min-w-full text-left text-sm">
+        <thead className="text-xs uppercase tracking-[0.12em] text-muted">
+          <tr>
+            <th className="pb-3 pr-3">Email</th>
+            <th className="pb-3 pr-3">Name</th>
+            <th className="pb-3 pr-3">Role</th>
+            <th className="pb-3 pr-3">Profile</th>
+            <th className="pb-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map((user) => (
+            <tr key={user.id} className="border-t border-line">
+              <td className="py-3 pr-3">{user.email ?? "Not specified"}</td>
+              <td className="py-3 pr-3">{user.name ?? "Not specified"}</td>
+              <td className="py-3 pr-3">{user.role}</td>
+              <td className="py-3 pr-3">{user.profile ? "Yes" : "No"}</td>
+              <td className="py-3">
+                {user.id === currentUserId ? (
+                  <span className="text-xs text-muted">You</span>
+                ) : (
+                  <AdminUserActions userId={user.id} hasProfile={Boolean(user.profile)} />
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
   );
 }

@@ -2,7 +2,7 @@ import { cache, Suspense } from "react";
 import { Pill } from "@/components/brand";
 import { CvForm } from "@/components/cv-form";
 import { CvOptimizeButton } from "@/components/cv-optimize-button";
-import { ProfileQuickForm } from "@/components/profile-quick-form";
+import { ProfileEditor } from "@/components/profile-editor";
 import { getSessionUser, isPersistedUser } from "@/lib/auth";
 import { withDb } from "@/lib/db";
 import { asJsonArray } from "@/lib/normalize";
@@ -23,11 +23,13 @@ export default async function CvPage() {
         </p>
         <div className="panel space-y-4 p-6">
           <h2 className="font-semibold">Profil rapide</h2>
-          <ProfileQuickForm />
+          <ProfileEditor />
         </div>
         <div className="panel space-y-4 p-6">
           <h2 className="font-semibold">Coller un CV</h2>
-          <CvForm />
+          <Suspense fallback={<CvForm />}>
+            <CvFormFromProfile />
+          </Suspense>
           <Suspense fallback={<CvOptimizeButton cvText="" />}>
             <CvOptimizeFromProfile />
           </Suspense>
@@ -52,6 +54,11 @@ const loadCvProfile = cache(async () => {
     null,
   );
 });
+
+async function CvFormFromProfile() {
+  const profile = await loadCvProfile();
+  return <CvForm initialText={profile?.cvText ?? ""} />;
+}
 
 async function CvOptimizeFromProfile() {
   const profile = await loadCvProfile();

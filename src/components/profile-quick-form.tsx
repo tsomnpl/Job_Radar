@@ -8,11 +8,13 @@ export function ProfileQuickForm({
   initialSkills = "",
   initialLocations = "",
   initialSeniority = "",
+  hasProfile = false,
 }: {
   initialHeadline?: string;
   initialSkills?: string;
   initialLocations?: string;
   initialSeniority?: string;
+  hasProfile?: boolean;
 }) {
   const router = useRouter();
   const [headline, setHeadline] = useState(initialHeadline);
@@ -37,6 +39,28 @@ export function ProfileQuickForm({
       return;
     }
     setStatus("Profil enregistré.");
+    router.refresh();
+  }
+
+  async function remove(scope: "profile" | "account") {
+    const message =
+      scope === "account"
+        ? "Supprimer toutes vos données JobRadar (profil, CV, sauvegardes, candidatures) ? Votre compte Clerk reste. Vous pourrez vous reconnecter avec un profil vide."
+        : "Supprimer ce profil et le CV enregistré ? Cette action est définitive.";
+    if (!confirm(message)) return;
+    setPending(true);
+    setStatus(null);
+    const response = await fetch(`/api/profile?scope=${scope}`, { method: "DELETE" });
+    setPending(false);
+    if (!response.ok) {
+      setStatus("Suppression impossible.");
+      return;
+    }
+    setHeadline("");
+    setSkills("");
+    setLocations("");
+    setSeniority("");
+    setStatus(scope === "account" ? "Données JobRadar supprimées." : "Profil supprimé.");
     router.refresh();
   }
 
@@ -66,9 +90,29 @@ export function ProfileQuickForm({
         placeholder="Séniorité — intern, junior, mid, senior"
         className="field w-full rounded-xl px-3 py-2 text-sm outline-none"
       />
-      <button type="submit" disabled={pending} className="btn-primary rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-60">
-        {pending ? "Enregistrement..." : "Enregistrer le profil"}
-      </button>
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="submit" disabled={pending} className="btn-primary rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-60">
+          {pending ? "Enregistrement..." : "Enregistrer le profil"}
+        </button>
+        {hasProfile ? (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => void remove("profile")}
+            className="rounded-xl border border-danger px-4 py-2 text-sm font-semibold text-danger disabled:opacity-60"
+          >
+            Supprimer le profil
+          </button>
+        ) : null}
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => void remove("account")}
+          className="rounded-xl border border-line px-4 py-2 text-sm disabled:opacity-60"
+        >
+          Supprimer mes données
+        </button>
+      </div>
       {status ? <p className="text-sm text-muted">{status}</p> : null}
     </form>
   );

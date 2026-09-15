@@ -3,6 +3,7 @@ import { isPersistedUser, requireUser } from "@/lib/auth";
 import { logDbError } from "@/lib/db";
 import { parseSeniority, parseSkillList } from "@/lib/normalize";
 import { prisma } from "@/lib/prisma";
+import { deleteAccountDataForUser, deleteProfileForUser, accountDeleteScope } from "@/server/account";
 
 export async function POST(request: Request) {
   try {
@@ -46,6 +47,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
     }
     logDbError("api.profile", error);
+    return NextResponse.json({ error: "DATABASE_UNAVAILABLE" }, { status: 503 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const user = await requireUser();
+    if (!isPersistedUser(user)) {
+      return NextResponse.json({ error: "DATABASE_UNAVAILABLE" }, { status: 503 });
+    }
+    const url = new URL(request.url);
+    const scope = accountDeleteScope(url.searchParams.get("scope"));
+    const result =
+      scope === "account" ? await deleteAccountDataForUser(user.id) : await deleteProfileForUser(user.id);
+    return NextResponse.json({ ok: true, scope, ...result });
+  } catch (error) {
+    if (error instanceof Error && error.message === "UNAUTHENTICATED") {
+      return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+    }
+    logDbError("api.profile.delete", error);
     return NextResponse.json({ error: "DATABASE_UNAVAILABLE" }, { status: 503 });
   }
 }
