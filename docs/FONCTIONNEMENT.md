@@ -31,7 +31,7 @@ Dans Clerk : autoriser le domaine Vercel (`job-radar-six-ochre.vercel.app`).
 - `npm run db:seed` existe encore **si vous voulez** recharger un échantillon, ce n’est **pas** automatique.
 - Dashboard / Offres / Landing affichent **0** tant qu’aucune offre réelle n’est collectée ou importée.
 - **Sources réelles** :
-  - Recherche : Jobicy, Remote OK, Remotive (APIs publiques). Seules les offres avec titre, entreprise, description et URL `http(s)` officielle sont gardées.
+  - Recherche : Jobicy, Remote OK, Remotive, The Muse (stages), Himalayas. Seules les offres avec titre, entreprise, description et URL `http(s)` officielle sont gardées.
   - Cron quotidien `GET /api/cron/radar` (06:00 UTC) pour alimenter le stock.
   - **Admin** : coller une annonce brute (IA extraie depuis le texte) ou CSV/JSON.
 - Rodium **n’invente jamais** une offre. Il parse l’intention / le CV / un texte déjà fourni.
@@ -46,7 +46,7 @@ SQLite `file:./dev.db` **ne marche pas** sur Vercel.
 Page `/search?q=…` :
 
 1. **Intention** (`src/server/search.ts`) : RodiumAI parse la phrase (lieu, contrat, skills). Sinon parseur déterministe (`src/lib/intent.ts`).
-2. **Collecte** en parallèle (`src/server/collect.ts`) : Jobicy, Remote OK, Remotive. Timeout 7 s. Filtre de pertinence + URL officielle obligatoire. Rien n’est fabriqué si les APIs sont vides ou hors sujet.
+2. **Collecte** en parallèle (`src/server/collect.ts`) : Jobicy, Remote OK, Remotive, The Muse (stages), Himalayas. Timeout 7 s. Filtre de pertinence + URL officielle obligatoire. Rien n’est fabriqué si les APIs sont vides ou hors sujet.
 3. **Matching** (`src/lib/matching.ts`) contre le **stock vérifié** uniquement :  
    skills 35 % · requête 20 % · lieu 15 % · séniorité 10 % · remote 10 % · langue 5 % · fraîcheur 5 %.  
    Score + raisons + écarts (explicable). Une offre remote **restreinte** (ex. APAC/Europe) ne match **pas** une recherche Togo.
@@ -62,7 +62,9 @@ Page `/search?q=…` :
 | `/search` | Intention + offres vérifiées. Sinon : *No matching opportunities found.* Jamais d’offre inventée. |
 | `/jobs` | Liste du stock uniquement (0 si vide). |
 | `/jobs/[id]` | Fiche : type, durée, lieu, score, pourquoi, écarts, sauver, candidature, lettre IA. |
-| `/dashboard` | Compte : compteurs à 0, formulaire profil, puis matchs / sauvegardes / candidatures. |
+| `/dashboard` | Compte : compteurs, profil, matchs, sauvegardes, candidatures, dernière recherche. |
+| `/saved-jobs` | Offres gardées sur le radar (Clerk). |
+| `/applications` | Candidatures suivies après Apply officiel (Clerk). |
 | `/cv` | Profil court + collage CV + coaching IA. |
 | `/admin` | Stats, extraction texte brut, CSV/JSON, publier/dépublier. |
 | `/sign-in` `/sign-up` | Clerk (ou mode démo). |
@@ -106,4 +108,4 @@ Pas de Money Fusion. Pas de crawl 24 h / CAPTCHA / LinkedIn-only.
 
 - Emails de notification
 - Scraping LinkedIn (volontairement interdit)
-- ReliefWeb jobs API (410 Gone — non utilisé)
+- ReliefWeb jobs API (v1 410, v2 exige un `appname` approuvé — non utilisé)

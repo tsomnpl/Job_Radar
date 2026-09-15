@@ -40,7 +40,14 @@ const AFRICA_PLACES = new Set([
 export function isUnrestrictedRemoteLocation(location: string | null | undefined): boolean {
   const folded = fold(location ?? "");
   if (!folded || folded === fold(NOT_SPECIFIED)) return true;
-  return /^(anywhere|worldwide|world wide|global|unrestricted|remote)$/.test(folded);
+  return /^(anywhere|worldwide|world wide|global|unrestricted|remote|fully remote|flexible \/ remote|flexible remote|work from anywhere)$/.test(
+    folded,
+  );
+}
+
+export function isAfricanSearch(input: { location?: string | null; country?: string | null; query?: string }): boolean {
+  const blob = fold(`${input.location ?? ""} ${input.country ?? ""} ${input.query ?? ""}`);
+  return [...AFRICA_PLACES].some((place) => blob.includes(place));
 }
 
 export function placesCompatible(candidatePlace: string, jobPlace: string): boolean {

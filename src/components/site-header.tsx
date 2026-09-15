@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/search", label: "Recherche" },
   { href: "/jobs", label: "Offres" },
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/saved-jobs", label: "Radar" },
   { href: "/cv", label: "CV" },
   { href: "/admin", label: "Admin" },
 ];
