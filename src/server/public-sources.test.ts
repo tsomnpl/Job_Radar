@@ -5,9 +5,12 @@ import {
   filterRelevantOpportunities,
   isRelevantToIntent,
   jobicyTagsForIntent,
+  jobicyUrlsForIntent,
+  parseHimalayasPayload,
   parseJobicyPayload,
   parseRemoteOkPayload,
   parseRemotivePayload,
+  parseTheMusePayload,
 } from "@/server/public-sources";
 
 const jobicyPayload = {
@@ -102,6 +105,58 @@ describe("public source parsers", () => {
     expect(jobs[0].company).toBe("Coalition Technologies");
     expect(jobs[0].sourceUrl).toContain("https://");
   });
+
+  it("parses The Muse internships with official landing URLs", () => {
+    const jobs = parseTheMusePayload({
+      results: [
+        {
+          id: 4401,
+          name: "Intern AI & Management Consulting",
+          contents: "<p>Internship in value engineering.</p>",
+          publication_date: "2026-09-01T00:00:00Z",
+          locations: [{ name: "Flexible / Remote" }],
+          company: { name: "Celonis" },
+          refs: { landing_page: "https://www.themuse.com/jobs/celonis/intern-ai-management" },
+          levels: [{ name: "Internship" }],
+          categories: [{ name: "Data Science" }],
+        },
+        {
+          id: 9,
+          name: "Missing URL intern",
+          contents: "Internship",
+          company: { name: "Ghost" },
+        },
+      ],
+    });
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0].id).toBe("pub_themuse_4401");
+    expect(jobs[0].contractType).toBe("internship");
+    expect(jobs[0].location).toBe("Flexible / Remote");
+    expect(jobs[0].sourceUrl).toBe("https://www.themuse.com/jobs/celonis/intern-ai-management");
+  });
+
+  it("parses Himalayas jobs and skips listings without an apply URL", () => {
+    const jobs = parseHimalayasPayload({
+      jobs: [
+        {
+          guid: "222",
+          title: "Cybersecurity Intern",
+          companyName: "Northwind",
+          applicationLink: "https://himalayas.app/companies/northwind/jobs/cybersecurity-intern",
+          locationRestrictions: [],
+          employmentType: "Internship",
+          seniority: ["Intern"],
+          description: "<p>Global remote internship in cybersecurity.</p>",
+          pubDate: "2026-09-10T00:00:00Z",
+          categories: ["Cybersecurity"],
+        },
+      ],
+    });
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0].source).toBe("himalayas");
+    expect(jobs[0].location).toBe("Not specified");
+    expect(jobs[0].contractType).toBe("internship");
+  });
 });
 
 describe("relevance", () => {
@@ -121,6 +176,7 @@ describe("relevance", () => {
   it("maps internship + security intent to Jobicy tags", () => {
     const intent = parseIntentHeuristic("stage cybersécurité Togo");
     expect(jobicyTagsForIntent(intent)).toEqual(["internship", "security"]);
+    expect(jobicyUrlsForIntent(intent).some((url) => url.includes("geo=emea"))).toBe(true);
   });
 
   it("does not treat internal/international + HIPAA security as a cyber internship", () => {

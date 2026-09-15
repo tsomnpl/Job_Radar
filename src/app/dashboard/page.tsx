@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Pill, ScoreRing } from "@/components/brand";
+import { RadarJobList } from "@/components/radar-job-list";
 import { ProfileQuickForm } from "@/components/profile-quick-form";
 import { getSessionUser, isPersistedUser } from "@/lib/auth";
 import { withDb } from "@/lib/db";
@@ -45,9 +46,10 @@ export default async function DashboardPage() {
   ]);
 
   const stock = await listStockJobs();
+  const radarQuery = searches[0]?.query || profile?.headline || "";
   const ranked = stock.length
     ? await rankJobsForUser({
-        intent: parseIntentHeuristic(profile?.headline || "opportunités"),
+        intent: parseIntentHeuristic(radarQuery || "opportunités"),
         userId: user?.id,
         limit: 6,
       })
@@ -101,10 +103,16 @@ export default async function DashboardPage() {
         <article className="panel p-5">
           <p className="text-xs uppercase tracking-[0.18em] text-muted">Sur le radar</p>
           <p className="mt-3 text-3xl font-semibold">{saved.length}</p>
+          <Link href="/saved-jobs" className="mt-3 inline-block text-sm text-accent">
+            Voir
+          </Link>
         </article>
         <article className="panel p-5">
           <p className="text-xs uppercase tracking-[0.18em] text-muted">Candidatures</p>
           <p className="mt-3 text-3xl font-semibold">{applications.length}</p>
+          <Link href="/applications" className="mt-3 inline-block text-sm text-accent">
+            Voir
+          </Link>
         </article>
         <article className="panel p-5">
           <p className="text-xs uppercase tracking-[0.18em] text-muted">Alertes</p>
@@ -142,38 +150,54 @@ export default async function DashboardPage() {
             <ScoreRing score={ranked[0].match.score} />
           </Link>
         ) : (
-          <p className="mt-3 text-sm text-muted">No matching opportunities found. Import a verified offer in Admin.</p>
+          <p className="mt-3 text-sm text-muted">
+            {radarQuery
+              ? `Radar basé sur votre dernière recherche : "${radarQuery}".`
+              : "No matching opportunities found. Lancez une recherche — JobRadar n'invente pas d'offre."}
+          </p>
         )}
       </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="panel p-6">
-          <h2 className="font-semibold">Offres sauvegardées</h2>
-          <ul className="mt-4 space-y-3 text-sm">
-            {saved.map((item) => (
-              <li key={item.id}>
-                <Link href={`/jobs/${item.jobId}`} className="hover:text-accent">
-                  {item.job.title}
-                </Link>
-                <span className="ml-2 text-xs text-muted">{item.status}</span>
-              </li>
-            ))}
-            {saved.length === 0 ? <li className="text-muted">0 — aucune sauvegarde.</li> : null}
-          </ul>
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold">Offres sauvegardées</h2>
+            <Link href="/saved-jobs" className="text-sm text-accent">
+              Tout voir
+            </Link>
+          </div>
+          <div className="mt-4">
+            <RadarJobList
+              items={saved.map((item) => ({
+                id: item.id,
+                jobId: item.jobId,
+                title: item.job.title,
+                company: item.job.company,
+                status: item.status,
+              }))}
+              empty="0 — aucune sauvegarde."
+            />
+          </div>
         </section>
         <section className="panel p-6">
-          <h2 className="font-semibold">Candidatures</h2>
-          <ul className="mt-4 space-y-3 text-sm">
-            {applications.map((item) => (
-              <li key={item.id}>
-                <Link href={`/jobs/${item.jobId}`} className="hover:text-accent">
-                  {item.job.title}
-                </Link>
-                <span className="ml-2 text-xs text-muted">{item.status}</span>
-              </li>
-            ))}
-            {applications.length === 0 ? <li className="text-muted">0 — aucune candidature.</li> : null}
-          </ul>
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold">Candidatures</h2>
+            <Link href="/applications" className="text-sm text-accent">
+              Tout voir
+            </Link>
+          </div>
+          <div className="mt-4">
+            <RadarJobList
+              items={applications.map((item) => ({
+                id: item.id,
+                jobId: item.jobId,
+                title: item.job.title,
+                company: item.job.company,
+                status: item.status,
+              }))}
+              empty="0 — aucune candidature."
+            />
+          </div>
         </section>
       </div>
 

@@ -2,15 +2,16 @@ import { normalizeJobInput } from "@/lib/import-jobs";
 import { upsertJobRecord } from "@/server/jobs-store";
 import type { SearchIntent } from "@/lib/types";
 import {
-  JOBICY_CRON_URLS,
   PUBLIC_BOARD_LABELS,
-  REMOTE_OK_URL,
-  REMOTIVE_URL,
+  cronFetchTargets,
+  fetchTargetsForIntent,
   filterRelevantOpportunities,
-  jobicyUrlsForIntent,
+  parseHimalayasPayload,
   parseJobicyPayload,
   parseRemoteOkPayload,
   parseRemotivePayload,
+  parseTheMusePayload,
+  type FetchTarget,
   type PublicOpportunity,
 } from "@/server/public-sources";
 
@@ -42,6 +43,14 @@ async function fetchJson(url: string): Promise<unknown | null> {
   } catch {
     return null;
   }
+}
+
+function parseTarget(kind: FetchTarget["kind"], payload: unknown): PublicOpportunity[] {
+  if (kind === "jobicy") return parseJobicyPayload(payload);
+  if (kind === "remoteok") return parseRemoteOkPayload(payload);
+  if (kind === "remotive") return parseRemotivePayload(payload);
+  if (kind === "themuse") return parseTheMusePayload(payload);
+  return parseHimalayasPayload(payload);
 }
 
 function dedupe(jobs: PublicOpportunity[]): PublicOpportunity[] {
@@ -88,27 +97,27 @@ async function persistOpportunities(jobs: PublicOpportunity[]): Promise<number> 
   return saved;
 }
 
-async function fetchPublicBoards(jobicyUrls: string[]): Promise<PublicOpportunity[]> {
-  const uniqueUrls = uniqueStrings([...jobicyUrls, REMOTE_OK_URL, REMOTIVE_URL]);
-  const payloads = await Promise.all(uniqueUrls.map((url) => fetchJson(url)));
+async function fetchTargets(targets: FetchTarget[]): Promise<PublicOpportunity[]> {
+  const uniqueTargets: FetchTarget[] = [];
+  const seen = new Set<string>();
+  for (const target of targets) {
+    if (seen.has(target.url)) continue;
+    seen.add(target.url);
+    uniqueTargets.push(target);
+  }
+  const payloads = await Promise.all(uniqueTargets.map((target) => fetchJson(target.url)));
   const jobs: PublicOpportunity[] = [];
-  uniqueUrls.forEach((url, index) => {
+  uniqueTargets.forEach((target, index) => {
     const payload = payloads[index];
     if (!payload) return;
-    if (url.includes("jobicy.com")) jobs.push(...parseJobicyPayload(payload));
-    else if (url.includes("remoteok.com")) jobs.push(...parseRemoteOkPayload(payload));
-    else if (url.includes("remotive.com")) jobs.push(...parseRemotivePayload(payload));
+    jobs.push(...parseTarget(target.kind, payload));
   });
   return dedupe(jobs);
 }
 
-function uniqueStrings(values: string[]): string[] {
-  return [...new Set(values)];
-}
-
 export async function collectPublicOpportunitiesForIntent(intent: SearchIntent): Promise<CollectResult> {
   try {
-    const fetched = await fetchPublicBoards(jobicyUrlsForIntent(intent));
+    const fetched = await fetchTargets(fetchTargetsForIntent(intent));
     const relevant = filterRelevantOpportunities(fetched, intent, SEARCH_SAVE_CAP);
     const saved = await persistOpportunities(relevant);
     return { fetched: fetched.length, saved, sources: PUBLIC_BOARD_LABELS };
@@ -119,7 +128,7 @@ export async function collectPublicOpportunitiesForIntent(intent: SearchIntent):
 
 export async function ingestPublicBoards(): Promise<CollectResult> {
   try {
-    const fetched = await fetchPublicBoards(JOBICY_CRON_URLS);
+    const fetched = await fetchTargets(cronFetchTargets());
     const capped: PublicOpportunity[] = [];
     const perSource = new Map<string, number>();
     for (const job of fetched) {

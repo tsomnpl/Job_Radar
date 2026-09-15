@@ -1,6 +1,6 @@
 import { stripHtml } from "@/lib/html";
 import { hasInternTitle, NOT_SPECIFIED, officialApplicationUrl } from "@/lib/jobs";
-import { isUnrestrictedRemoteLocation, placesCompatible } from "@/lib/places";
+import { isAfricanSearch, isUnrestrictedRemoteLocation, placesCompatible } from "@/lib/places";
 import { fold, parseContractType, parseSeniority, parseSkillList, tokenize, unique } from "@/lib/normalize";
 import { tokenMatchesHaystack } from "@/lib/synonyms";
 import type { ContractType, SearchIntent, Seniority } from "@/lib/types";
@@ -9,6 +9,8 @@ export const PUBLIC_BOARDS = [
   { id: "jobicy", label: "Jobicy" },
   { id: "remoteok", label: "Remote OK" },
   { id: "remotive", label: "Remotive" },
+  { id: "themuse", label: "The Muse" },
+  { id: "himalayas", label: "Himalayas" },
 ] as const;
 
 export const PUBLIC_BOARD_LABELS = PUBLIC_BOARDS.map((board) => board.label);
@@ -258,6 +260,75 @@ export function parseRemotivePayload(payload: unknown): PublicOpportunity[] {
   return parsed;
 }
 
+export function parseTheMusePayload(payload: unknown): PublicOpportunity[] {
+  const root = asRecord(payload);
+  const jobs = Array.isArray(root?.results) ? root.results : [];
+  const parsed: PublicOpportunity[] = [];
+  for (const item of jobs) {
+    const job = asRecord(item);
+    if (!job) continue;
+    const company = asRecord(job.company);
+    const refs = asRecord(job.refs);
+    const locations = Array.isArray(job.locations)
+      ? job.locations.map((loc) => asString(asRecord(loc)?.name)).filter(Boolean)
+      : [];
+    const levels = Array.isArray(job.levels)
+      ? job.levels.map((level) => asString(asRecord(level)?.name)).filter(Boolean)
+      : [];
+    const categories = Array.isArray(job.categories)
+      ? job.categories.map((category) => asString(asRecord(category)?.name)).filter(Boolean)
+      : [];
+    const record = finalize({
+      source: "themuse",
+      sourceId: asString(job.id),
+      title: asString(job.name) || asString(job.title),
+      company: asString(company?.name),
+      location: locationFrom(locations.join(", ")),
+      typeBlob: levels.join(" "),
+      levelBlob: levels.join(" "),
+      description: asString(job.contents) || asString(job.excerpt),
+      sourceUrl: firstUrl(refs?.landing_page, refs?.external_url),
+      skills: categories,
+      postedAt: asDate(job.publication_date),
+    });
+    if (record) parsed.push(record);
+  }
+  return parsed;
+}
+
+export function parseHimalayasPayload(payload: unknown): PublicOpportunity[] {
+  const root = asRecord(payload);
+  const jobs = Array.isArray(root?.jobs) ? root.jobs : [];
+  const parsed: PublicOpportunity[] = [];
+  for (const item of jobs) {
+    const job = asRecord(item);
+    if (!job) continue;
+    const restrictions = asStringList(job.locationRestrictions);
+    const record = finalize({
+      source: "himalayas",
+      sourceId: asString(job.guid) || asString(job.title),
+      title: asString(job.title),
+      company: asString(job.companyName),
+      location: locationFrom(restrictions.join(", ")),
+      typeBlob: asString(job.employmentType),
+      levelBlob: asStringList(job.seniority).join(" "),
+      description: asString(job.description) || asString(job.excerpt),
+      sourceUrl: firstUrl(job.applicationLink),
+      skills: asStringList(job.categories),
+      salaryMin: asFiniteNumber(job.minSalary),
+      salaryMax: asFiniteNumber(job.maxSalary),
+      currency: asString(job.currency) || "USD",
+      postedAt: asDate(job.pubDate),
+    });
+    if (record) parsed.push(record);
+  }
+  return parsed;
+}
+
+export function internIntent(intent: SearchIntent): boolean {
+  return intent.contractType === "internship" || intent.seniority === "intern";
+}
+
 function isInternSignal(job: PublicOpportunity): boolean {
   return hasInternTitle(job.title);
 }
@@ -273,10 +344,6 @@ function roleTokensFromIntent(intent: SearchIntent): string[] {
       return !locationFolds.some((place) => place.includes(folded) || folded.includes(place));
     }),
   );
-}
-
-function internIntent(intent: SearchIntent): boolean {
-  return intent.contractType === "internship" || intent.seniority === "intern";
 }
 
 export function isRelevantToIntent(job: PublicOpportunity, intent: SearchIntent): boolean {
@@ -350,14 +417,50 @@ export function jobicyTagsForIntent(intent: SearchIntent): string[] {
 
 export function jobicyUrlsForIntent(intent: SearchIntent): string[] {
   const tags = jobicyTagsForIntent(intent);
-  if (!tags.length) return ["https://jobicy.com/api/v2/remote-jobs?count=50"];
-  return tags.map((tag) => `https://jobicy.com/api/v2/remote-jobs?count=50&tag=${encodeURIComponent(tag)}`);
+  const urls = tags.length
+    ? tags.map((tag) => `https://jobicy.com/api/v2/remote-jobs?count=50&tag=${encodeURIComponent(tag)}`)
+    : ["https://jobicy.com/api/v2/remote-jobs?count=50"];
+  if (isAfricanSearch(intent)) {
+    urls.push("https://jobicy.com/api/v2/remote-jobs?count=50&geo=emea");
+  }
+  return unique(urls).slice(0, 3);
 }
+
+export type FetchTarget = { kind: PublicBoardId; url: string };
 
 export const REMOTE_OK_URL = "https://remoteok.com/api";
 export const REMOTIVE_URL = "https://remotive.com/api/remote-jobs";
+export const HIMALAYAS_URL = "https://himalayas.app/jobs/api?limit=40";
+export const THEMUSE_INTERN_URLS = [
+  "https://www.themuse.com/api/public/jobs?level=Internship&descending=true&page=0",
+  "https://www.themuse.com/api/public/jobs?level=Internship&descending=true&page=1",
+];
 export const JOBICY_CRON_URLS = [
   "https://jobicy.com/api/v2/remote-jobs?count=50",
   "https://jobicy.com/api/v2/remote-jobs?count=50&tag=internship",
   "https://jobicy.com/api/v2/remote-jobs?count=50&tag=security",
+  "https://jobicy.com/api/v2/remote-jobs?count=50&geo=emea",
 ];
+
+export function fetchTargetsForIntent(intent: SearchIntent): FetchTarget[] {
+  const targets: FetchTarget[] = [
+    ...jobicyUrlsForIntent(intent).map((url) => ({ kind: "jobicy" as const, url })),
+    { kind: "remoteok", url: REMOTE_OK_URL },
+    { kind: "remotive", url: REMOTIVE_URL },
+    { kind: "himalayas", url: HIMALAYAS_URL },
+  ];
+  if (internIntent(intent)) {
+    for (const url of THEMUSE_INTERN_URLS) targets.push({ kind: "themuse", url });
+  }
+  return targets;
+}
+
+export function cronFetchTargets(): FetchTarget[] {
+  return [
+    ...JOBICY_CRON_URLS.map((url) => ({ kind: "jobicy" as const, url })),
+    { kind: "remoteok", url: REMOTE_OK_URL },
+    { kind: "remotive", url: REMOTIVE_URL },
+    { kind: "himalayas", url: HIMALAYAS_URL },
+    ...THEMUSE_INTERN_URLS.map((url) => ({ kind: "themuse" as const, url })),
+  ];
+}

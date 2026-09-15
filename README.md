@@ -13,7 +13,8 @@ Produit indépendant. **Ne pas mélanger avec FlyerMint / `1st_SaaS`.**
 - CV → profil structuré
 - Dashboard (recherches, matches, radar)
 - Import admin CSV / JSON
-- Collecte d’offres **réelles** (Jobicy, Remote OK, Remotive) + cron quotidien
+- Collecte d’offres **réelles** (Jobicy, Remote OK, Remotive, The Muse, Himalayas) + cron quotidien
+- Radar personnel : sauvegardes `/saved-jobs`, candidatures `/applications`
 
 ## Stack
 
