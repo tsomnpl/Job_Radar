@@ -28,9 +28,6 @@ export function EmptyResults({
         <Link href="/search" className="btn-primary rounded-full px-4 py-2 text-sm font-semibold">
           Search Opportunities
         </Link>
-        <Link href="/admin" className="rounded-full border border-line px-4 py-2 text-sm font-semibold">
-          Import a verified offer
-        </Link>
       </div>
     </section>
   );

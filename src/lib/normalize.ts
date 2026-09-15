@@ -77,6 +77,7 @@ export function parseSkillList(value: string[] | string | null | undefined): str
 export function parseRemoteType(value: string | null | undefined): RemoteType | null {
   if (!value) return null;
   const folded = fold(value);
+  if (/(unspecified|not specified|inconnu)/.test(folded)) return "unspecified";
   if (/(remote|teletravail|full.?remote|a distance)/.test(folded)) return "remote";
   if (/(hybrid|hybride|flex)/.test(folded)) return "hybrid";
   if (/(onsite|on-site|presentiel|sur site|bureau)/.test(folded)) return "onsite";
@@ -86,11 +87,15 @@ export function parseRemoteType(value: string | null | undefined): RemoteType | 
 export function parseContractType(value: string | null | undefined): ContractType | null {
   if (!value) return null;
   const folded = fold(value);
-  if (/\bcdi\b/.test(folded)) return "cdi";
-  if (/\bcdd\b/.test(folded)) return "cdd";
-  if (/(freelance|independant|contract)/.test(folded)) return "freelance";
   if (/(stage|intern)/.test(folded)) return "internship";
   if (/(alternance|apprentissage|apprentice)/.test(folded)) return "apprenticeship";
+  if (/(consultant|consulting)/.test(folded)) return "consultant";
+  if (/(mission)/.test(folded)) return "mission";
+  if (/(freelance|independant|contract)/.test(folded)) return "freelance";
+  if (/\bcdi\b/.test(folded)) return "cdi";
+  if (/\bcdd\b/.test(folded)) return "cdd";
+  if (/(employee|emploi)/.test(folded)) return "employee";
+  if (/(other|autre|unspecified)/.test(folded)) return "other";
   return (CONTRACT_TYPES as readonly string[]).includes(folded)
     ? (folded as ContractType)
     : null;
@@ -104,6 +109,7 @@ export function parseSeniority(value: string | null | undefined): Seniority | nu
   if (/(lead|head|principal|staff|directeur)/.test(folded)) return "lead";
   if (/(senior|confirme|experient)/.test(folded)) return "senior";
   if (/(mid|confirme|intermediate)/.test(folded)) return "mid";
+  if (/(unspecified|not specified|inconnu)/.test(folded)) return "unspecified";
   return (SENIORITY_LEVELS as readonly string[]).includes(folded)
     ? (folded as Seniority)
     : null;

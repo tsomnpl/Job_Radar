@@ -88,7 +88,12 @@ async function persistOpportunities(jobs: PublicOpportunity[]): Promise<number> 
         language: job.language,
         postedAt: job.postedAt,
       });
-      await upsertJobRecord({ ...normalized, id: job.id, active: true });
+      await upsertJobRecord({
+        ...normalized,
+        id: job.id,
+        active: false,
+        status: "pending",
+      });
       saved += 1;
     } catch {
       // Skip malformed rows rather than inventing fields.

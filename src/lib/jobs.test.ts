@@ -26,6 +26,7 @@ describe("verified opportunities", () => {
     expect(isVerifiedOpportunity({ source: "remoteok" })).toBe(true);
     expect(isVerifiedOpportunity({ source: "themuse" })).toBe(true);
     expect(isVerifiedOpportunity({ source: "himalayas" })).toBe(true);
+    expect(isVerifiedOpportunity({ source: "seed" })).toBe(false);
   });
 
   it("detects internships from the title only", () => {

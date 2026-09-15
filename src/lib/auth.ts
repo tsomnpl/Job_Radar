@@ -1,5 +1,5 @@
 import { currentUser } from "@clerk/nextjs/server";
-import { adminClerkIds, isClerkConfigured } from "@/lib/env";
+import { adminEmail, isClerkConfigured, isConfiguredAdmin } from "@/lib/env";
 import { logDbError } from "@/lib/db";
 import { prisma } from "@/lib/prisma";
 import { withTimeout } from "@/lib/timeout";
@@ -19,10 +19,18 @@ const EPHEMERAL_DEMO: AppUser = {
   id: "ephemeral_demo",
   clerkUserId: DEMO_CLERK_ID,
   email: "demo@jobradar.local",
-  name: "Profil démo",
-  role: "ADMIN",
+  name: "Profil local",
+  role: "USER",
   isDemo: true,
 };
+
+function roleFor(input: {
+  email?: string | null;
+  verifiedEmails?: string[];
+  clerkUserId?: string | null;
+}): "USER" | "ADMIN" {
+  return isConfiguredAdmin(input) ? "ADMIN" : "USER";
+}
 
 function ephemeralFromClerk(input: {
   clerkUserId: string;
@@ -57,19 +65,36 @@ function toAppUser(user: {
   };
 }
 
+function clerkEmails(clerkUser: {
+  primaryEmailAddressId: string | null;
+  emailAddresses: {
+    id: string;
+    emailAddress: string;
+    verification?: { status?: string | null } | null;
+  }[];
+}): { primary: string | null; verified: string[] } {
+  const addresses = clerkUser.emailAddresses ?? [];
+  const verified = addresses
+    .filter((item) => item.verification?.status === "verified")
+    .map((item) => item.emailAddress);
+  const primary =
+    addresses.find((item) => item.id === clerkUser.primaryEmailAddressId)?.emailAddress ??
+    addresses[0]?.emailAddress ??
+    null;
+  return { primary, verified };
+}
+
 async function upsertAppUser(input: {
   clerkUserId: string;
   email: string | null;
   name: string | null;
-  role?: "USER" | "ADMIN";
+  verifiedEmails?: string[];
 }): Promise<AppUser> {
   const existing = await prisma.user.findUnique({ where: { clerkUserId: input.clerkUserId } });
-  const allowlist = adminClerkIds();
-  const role =
-    input.role ??
-    (existing?.role === "ADMIN" || allowlist.includes(input.clerkUserId) || allowlist.length === 0
-      ? "ADMIN"
-      : "USER");
+  const role = roleFor({
+    verifiedEmails: input.verifiedEmails,
+    clerkUserId: input.clerkUserId,
+  });
 
   const user = await prisma.user.upsert({
     where: { clerkUserId: input.clerkUserId },
@@ -90,20 +115,24 @@ async function upsertAppUser(input: {
 }
 
 export async function getDemoUser(): Promise<AppUser> {
+  const role = roleFor({
+    verifiedEmails: ["demo@jobradar.local"],
+    clerkUserId: DEMO_CLERK_ID,
+  });
   try {
     return await withTimeout(
       upsertAppUser({
         clerkUserId: DEMO_CLERK_ID,
         email: "demo@jobradar.local",
-        name: "Profil démo",
-        role: "ADMIN",
+        name: "Profil local",
+        verifiedEmails: ["demo@jobradar.local"],
       }),
       2500,
-      EPHEMERAL_DEMO,
+      { ...EPHEMERAL_DEMO, role },
     );
   } catch (error) {
     logDbError("getDemoUser", error);
-    return EPHEMERAL_DEMO;
+    return { ...EPHEMERAL_DEMO, role };
   }
 }
 
@@ -116,26 +145,28 @@ export async function getSessionUser(): Promise<AppUser | null> {
     const clerkUser = await withTimeout(currentUser(), 2500, null);
     if (!clerkUser) return null;
 
-    const email = clerkUser.emailAddresses[0]?.emailAddress ?? null;
+    const { primary, verified } = clerkEmails(clerkUser);
     const name =
       [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || clerkUser.username || null;
-    const allowlist = adminClerkIds();
-    const role = allowlist.length === 0 || allowlist.includes(clerkUser.id) ? "ADMIN" : "USER";
+    const role = roleFor({
+      verifiedEmails: verified,
+      clerkUserId: clerkUser.id,
+    });
 
     try {
       return await withTimeout(
         upsertAppUser({
           clerkUserId: clerkUser.id,
-          email,
+          email: primary,
           name,
-          role,
+          verifiedEmails: verified,
         }),
         2500,
-        ephemeralFromClerk({ clerkUserId: clerkUser.id, email, name, role }),
+        ephemeralFromClerk({ clerkUserId: clerkUser.id, email: primary, name, role }),
       );
     } catch (error) {
       logDbError("upsertAppUser", error);
-      return ephemeralFromClerk({ clerkUserId: clerkUser.id, email, name, role });
+      return ephemeralFromClerk({ clerkUserId: clerkUser.id, email: primary, name, role });
     }
   } catch (error) {
     logDbError("getSessionUser", error);
@@ -157,4 +188,8 @@ export async function requireAdmin(): Promise<AppUser> {
 
 export function isPersistedUser(user: AppUser): boolean {
   return !user.id.startsWith("ephemeral_");
+}
+
+export function adminConfigLabel(): string {
+  return adminEmail() ? "configured" : "not configured";
 }

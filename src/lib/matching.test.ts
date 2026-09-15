@@ -19,9 +19,22 @@ const baseJob: JobRecord = {
   languages: ["fr"],
   description: "Stage data remote Cotonou, SQL Excel Python.",
   sourceUrl: null,
-  source: "seed",
+  source: "jobicy",
   language: "fr",
   postedAt: new Date(),
+  companyLogo: null,
+  applicationUrl: null,
+  requirements: null,
+  education: null,
+  experience: null,
+  benefits: null,
+  duration: null,
+  contactInfo: null,
+  deadline: null,
+  startDate: null,
+  endDate: null,
+  status: "published",
+  active: true,
 };
 
 describe("explainMatch", () => {
@@ -43,6 +56,7 @@ describe("explainMatch", () => {
       true,
     );
     expect(match.gaps).not.toContain("sql");
+    expect(match.matchedSkills).toEqual(expect.arrayContaining(["sql", "excel", "data"]));
   });
 
   it("penalizes onsite vs remote preference and missing skills", () => {

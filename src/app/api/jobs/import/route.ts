@@ -54,10 +54,13 @@ export async function POST(request: Request) {
         const data = normalizeJobInput(input);
         const existing = await prisma.job.findUnique({ where: { fingerprint: data.fingerprint } });
         if (existing) {
-          await prisma.job.update({ where: { id: existing.id }, data });
+          await prisma.job.update({
+            where: { id: existing.id },
+            data: { ...data, status: existing.status === "published" ? "published" : "pending", active: existing.status === "published" },
+          });
           updatedCount += 1;
         } else {
-          await prisma.job.create({ data });
+          await prisma.job.create({ data: { ...data, status: "pending", active: false } });
           createdCount += 1;
         }
       } catch (error) {

@@ -15,7 +15,7 @@ describe("job import", () => {
   it("normalizes jobs and fingerprints duplicates by sourceUrl", () => {
     const jobs = jobsFromCsv(csv);
     const first = normalizeJobInput(jobs[0]);
-    expect(first.remoteType).toBe("hybrid");
+    expect(first.remoteType).toBe("unspecified");
     expect(JSON.parse(first.skillsJson)).toContain("python");
     const withUrl = normalizeJobInput({
       ...jobs[0],

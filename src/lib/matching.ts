@@ -77,6 +77,7 @@ const SENIORITY_RANK: Record<Seniority, number> = {
   mid: 2,
   senior: 3,
   lead: 4,
+  unspecified: 2,
 };
 
 function clamp(value: number): number {
@@ -135,8 +136,11 @@ function locationScore(candidate: CandidateSnapshot, job: JobRecord): { score: n
 }
 
 function seniorityScore(candidate: Seniority | null, jobSeniority: string): { score: number; detail: string; polarity: MatchReason["polarity"] } {
-  const job = (jobSeniority as Seniority) in SENIORITY_RANK ? (jobSeniority as Seniority) : "mid";
-  if (!candidate) {
+  if (!jobSeniority || jobSeniority === "unspecified" || !((jobSeniority as Seniority) in SENIORITY_RANK)) {
+    return { score: 58, detail: "Séniorité de l'offre non spécifiée.", polarity: "neutral" };
+  }
+  const job = jobSeniority as Seniority;
+  if (!candidate || candidate === "unspecified") {
     return { score: 58, detail: "Séniorité candidate inconnue.", polarity: "neutral" };
   }
   const delta = Math.abs(SENIORITY_RANK[candidate] - SENIORITY_RANK[job]);
@@ -146,7 +150,10 @@ function seniorityScore(candidate: Seniority | null, jobSeniority: string): { sc
 }
 
 function remoteScore(preference: CandidateSnapshot["remotePreference"], jobRemote: string): { score: number; detail: string; polarity: MatchReason["polarity"] } {
-  if (!preference) return { score: 60, detail: "Pas de préférence de modalité.", polarity: "neutral" };
+  if (!jobRemote || jobRemote === "unspecified") {
+    return { score: 60, detail: "Modalité de l'offre non spécifiée.", polarity: "neutral" };
+  }
+  if (!preference || preference === "unspecified") return { score: 60, detail: "Pas de préférence de modalité.", polarity: "neutral" };
   if (preference === jobRemote) return { score: 100, detail: `Modalité ${jobRemote} identique.`, polarity: "positive" };
   if (preference === "hybrid" || jobRemote === "hybrid") {
     return { score: 70, detail: "Hybride compatible avec une préférence mixte.", polarity: "neutral" };
@@ -265,6 +272,7 @@ export function explainMatch(job: JobRecord, candidate: CandidateSnapshot, now =
   return {
     score,
     reasons,
+    matchedSkills: skills.matched,
     gaps: skills.missing,
     highlights,
   };

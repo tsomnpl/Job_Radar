@@ -8,9 +8,7 @@ export function PageSkeleton({ title = "Chargement du radar…" }: { title?: str
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-semibold">{title}</h1>
-        <p className="mt-2 text-muted">
-          L&apos;interface s&apos;affiche. Les données arrivent ensuite — rien n&apos;est inventé.
-        </p>
+        <p className="mt-2 text-muted">Les données arrivent…</p>
       </div>
       <div className="panel h-40 animate-pulse bg-elev" />
       <div className="grid gap-4 md:grid-cols-3">
@@ -41,8 +39,7 @@ function ClerkAuthCallout({ next }: { next: string }) {
     <section className="panel space-y-3 p-5">
       <h2 className="font-semibold">Connectez-vous pour enregistrer</h2>
       <p className="text-sm text-muted">
-        L&apos;écran reste visible. La sauvegarde, le CV et l&apos;admin exigent un compte — pas de page blanche
-        en attendant Clerk.
+        Un compte est nécessaire pour sauvegarder vos offres, votre CV et vos candidatures.
       </p>
       <div className="flex flex-wrap gap-3">
         <Link

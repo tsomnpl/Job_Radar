@@ -28,8 +28,42 @@ export function CvForm({ initialText = "" }: { initialText?: string }) {
     router.refresh();
   }
 
+  async function onUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setPending(true);
+    setStatus(null);
+    const form = new FormData();
+    form.append("file", file);
+    const response = await fetch("/api/cv/upload", { method: "POST", body: form });
+    const data = await response.json().catch(() => ({}));
+    setPending(false);
+    if (!response.ok) {
+      const messages: Record<string, string> = {
+        UNSUPPORTED_FILE: "Formats acceptés : PDF, DOCX, TXT (5 Mo max).",
+        FILE_TOO_LARGE: "Fichier trop volumineux (5 Mo max).",
+        PDF_PARSE_FAILED: "Impossible de lire ce PDF. Collez le texte.",
+        CV_TEXT_TOO_SHORT: "Peu de texte extrait. Collez le CV manuellement.",
+      };
+      setStatus(messages[data.error] ?? "Upload impossible.");
+      return;
+    }
+    if (typeof data.cvText === "string") setCvText(data.cvText);
+    setStatus("CV analysé. Compétences, expérience et formation ont été extraits.");
+    router.refresh();
+  }
+
   return (
     <form onSubmit={onSubmit} className="space-y-4">
+      <label className="block text-sm">
+        Upload PDF ou DOCX
+        <input
+          type="file"
+          accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+          onChange={onUpload}
+          className="mt-2 block w-full text-sm"
+        />
+      </label>
       <textarea
         value={cvText}
         onChange={(event) => setCvText(event.target.value)}

@@ -174,14 +174,12 @@ async function HomeJobPreview() {
       <div className="panel space-y-3 p-6">
         <p className="font-semibold">Aucune offre vérifiée en vitrine pour l&apos;instant</p>
         <p className="text-sm text-muted">
-          JobRadar n&apos;invente pas d&apos;entreprise. Lancez une recherche, ou importez une vraie offre en Admin.
+          JobRadar n&apos;invente pas d&apos;entreprise. Lancez une recherche pour des offres réelles, ou attendez
+          qu&apos;une opportunité publiée apparaisse.
         </p>
         <div className="flex flex-wrap gap-3 pt-1">
           <Link href="/search" className="btn-primary rounded-full px-4 py-2 text-sm font-semibold">
             Rechercher
-          </Link>
-          <Link href="/admin" className="rounded-full border border-line px-4 py-2 text-sm font-semibold">
-            Ouvrir Admin
           </Link>
         </div>
       </div>
