@@ -3,7 +3,7 @@ import { hasInternTitle, NOT_SPECIFIED, officialApplicationUrl } from "@/lib/job
 import { isAfricanSearch, isUnrestrictedRemoteLocation, placesCompatible } from "@/lib/places";
 import { fold, parseContractType, parseSeniority, parseSkillList, tokenize, unique } from "@/lib/normalize";
 import { tokenMatchesJob } from "@/lib/synonyms";
-import type { ContractType, SearchIntent, Seniority } from "@/lib/types";
+import type { ContractType, RemoteType, SearchIntent, Seniority } from "@/lib/types";
 
 export const PUBLIC_BOARDS = [
   { id: "jobicy", label: "Jobicy" },
@@ -24,7 +24,7 @@ export type PublicOpportunity = {
   company: string;
   location: string;
   country: string | null;
-  remoteType: "remote";
+  remoteType: RemoteType;
   contractType: ContractType;
   seniority: Seniority;
   salaryMin: number | null;

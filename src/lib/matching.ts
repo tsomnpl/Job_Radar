@@ -179,7 +179,7 @@ export function buildCandidate(intent: SearchIntent, profile?: Partial<Candidate
     skills: unique([...(profile?.skills ?? []), ...intent.skills].map(normalizeSkill)),
     languages: unique([...(profile?.languages ?? []), ...(intent.language ? [intent.language] : [])]),
     locations: unique(
-      [intent.location, ...(profile?.locations ?? [])].filter((item): item is string => Boolean(item)),
+      [intent.location, intent.country, ...(profile?.locations ?? [])].filter((item): item is string => Boolean(item)),
     ),
     seniority: intent.seniority ?? profile?.seniority ?? null,
     yearsExperience: profile?.yearsExperience ?? null,
