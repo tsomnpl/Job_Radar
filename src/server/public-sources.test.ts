@@ -122,6 +122,24 @@ describe("relevance", () => {
     const intent = parseIntentHeuristic("stage cybersécurité Togo");
     expect(jobicyTagsForIntent(intent)).toEqual(["internship", "security"]);
   });
+
+  it("does not treat internal/international + HIPAA security as a cyber internship", () => {
+    const intent = parseIntentHeuristic("internship cybersecurity remote");
+    const jobs = parseRemoteOkPayload([
+      {
+        id: "va-1",
+        position: "Healthcare Virtual Assistant Athena EMR Experience",
+        company: "Snapscale Philippines",
+        url: "https://remoteok.com/remote-jobs/remote-healthcare-virtual-assistant-athena-emr-experience-1",
+        description:
+          "<p>Support internal operations for an international team. Follow HIPAA security policies.</p>",
+        tags: ["healthcare", "assistant"],
+        location: "Worldwide",
+      },
+    ]);
+    expect(jobs).toHaveLength(1);
+    expect(isRelevantToIntent(jobs[0], intent)).toBe(false);
+  });
 });
 
 describe("stripHtml", () => {
