@@ -5,7 +5,11 @@ import { prisma } from "@/lib/prisma";
 import type { JobRecord } from "@/lib/types";
 import type { NormalizedJobInput } from "@/lib/import-jobs";
 
-const memoryJobs = new Map<string, JobRecord>();
+const globalStore = globalThis as typeof globalThis & {
+  __jobradarMemoryJobs?: Map<string, JobRecord>;
+};
+const memoryJobs = globalStore.__jobradarMemoryJobs ?? new Map<string, JobRecord>();
+globalStore.__jobradarMemoryJobs = memoryJobs;
 
 export function rememberJob(job: JobRecord): void {
   memoryJobs.set(job.id, job);

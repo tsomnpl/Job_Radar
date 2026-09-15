@@ -6,7 +6,7 @@ import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@cl
 export function HeaderAuth({ clerkEnabled }: { clerkEnabled: boolean }) {
   if (!clerkEnabled) {
     return (
-      <Link href="/dashboard" className="btn-primary rounded-full px-3 py-1.5 font-medium">
+      <Link href="/dashboard" className="btn-primary rounded-full px-3 py-1.5 font-medium whitespace-nowrap">
         Ouvrir le radar
       </Link>
     );

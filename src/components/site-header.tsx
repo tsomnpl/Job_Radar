@@ -44,17 +44,19 @@ export function SiteHeader({
             </Link>
           ))}
         </nav>
-        <div className="flex items-center gap-3 text-sm">
+        <div className="flex shrink-0 items-center gap-2 text-sm">
           <button
             type="button"
-            className="hidden rounded-lg border border-line px-2 py-1 text-xs text-muted md:inline"
+            className="rounded-lg border border-line px-2 py-1 text-xs text-muted"
             onClick={() => window.dispatchEvent(new Event("jobradar-command"))}
             aria-label="Open command search"
           >
             ⌘K
           </button>
           <ThemeToggle />
-          <HeaderAuth clerkEnabled={clerkEnabled} />
+          <span className="hidden sm:inline-flex">
+            <HeaderAuth clerkEnabled={clerkEnabled} />
+          </span>
           <button
             type="button"
             className="rounded-lg border border-line px-2 py-1 text-xs lg:hidden"
@@ -73,6 +75,16 @@ export function SiteHeader({
               {link.label}
             </Link>
           ))}
+          <button
+            type="button"
+            className="py-1 text-left hover:text-accent"
+            onClick={() => {
+              setOpen(false);
+              window.dispatchEvent(new Event("jobradar-command"));
+            }}
+          >
+            Command search
+          </button>
         </nav>
       ) : null}
     </header>
