@@ -1,4 +1,4 @@
-import { buildCandidate, explainMatch, narrativeFromMatch, selectVerifiedMatches, MIN_MATCH_SCORE } from "@/lib/matching";
+import { buildCandidate, explainMatch, jobFitsSearchIntent, narrativeFromMatch, selectVerifiedMatches, MIN_MATCH_SCORE } from "@/lib/matching";
 import { asJsonArray } from "@/lib/normalize";
 import { logDbError } from "@/lib/db";
 import { prisma } from "@/lib/prisma";
@@ -43,6 +43,7 @@ export async function rankJobsForUser(params: {
 
   const ranked = jobs
     .filter(isVerifiedOpportunity)
+    .filter((record) => jobFitsSearchIntent(record, params.intent))
     .map((record) => ({ ...record, match: explainMatch(record, candidate) }))
     .sort((a, b) => b.match.score - a.match.score);
 

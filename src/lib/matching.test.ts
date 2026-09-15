@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCandidate, explainMatch } from "@/lib/matching";
+import { buildCandidate, explainMatch, jobFitsSearchIntent } from "@/lib/matching";
 import { parseIntentHeuristic } from "@/lib/intent";
 import type { JobRecord } from "@/lib/types";
 
@@ -129,5 +129,11 @@ describe("explainMatch", () => {
     const queryReason = match.reasons.find((reason) => reason.factor === "query");
     expect(queryReason?.score).toBeGreaterThanOrEqual(70);
     expect(match.score).toBeGreaterThanOrEqual(55);
+  });
+
+  it("keeps internship search on titles that are actually internships", () => {
+    const intent = parseIntentHeuristic("internship cybersecurity remote");
+    expect(jobFitsSearchIntent({ title: "Cybersecurity Intern", source: "jobicy" }, intent)).toBe(true);
+    expect(jobFitsSearchIntent({ title: "Healthcare Virtual Assistant", source: "remoteok" }, intent)).toBe(false);
   });
 });
