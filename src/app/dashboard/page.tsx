@@ -23,8 +23,7 @@ export default function DashboardPage() {
         <p className="text-xs uppercase tracking-[0.2em] text-accent">Compte</p>
         <h1 className="mt-2 text-3xl font-semibold">Votre radar</h1>
         <p className="mt-2 text-muted">
-          Profil, CV, offres sauvegardées et candidatures. Les chiffres se remplissent quand Clerk / Postgres
-          répondent — JobRadar n&apos;invente pas d&apos;offre en attendant.
+          Profil, recherches, offres sauvegardées et candidatures.
         </p>
       </div>
 

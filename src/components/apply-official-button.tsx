@@ -31,10 +31,8 @@ export function ApplyOfficialButton({
   if (clerkEnabled && !signedIn) {
     return (
       <div className="panel space-y-3 p-4">
-        <p className="font-semibold">Sign in to continue</p>
-        <p className="text-sm text-muted">
-          Then JobRadar will send you to the official application website — not a fake JobRadar form.
-        </p>
+        <p className="font-semibold">Connectez-vous pour postuler</p>
+        <p className="text-sm text-muted">JobRadar ouvre ensuite le site officiel de l&apos;offre.</p>
         <div className="flex flex-wrap gap-3">
           <Link
             href={`/sign-in?redirect_url=${encodeURIComponent(returnTo)}`}
