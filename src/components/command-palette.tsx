@@ -80,9 +80,17 @@ export function CommandPalette({ signedIn }: { signedIn: boolean }) {
   }, [signedIn]);
 
   const needle = query.trim().toLowerCase();
-  const filtered = [...pages, ...jobs]
+  const searchHit: Hit | null = needle
+    ? {
+        href: `/search?q=${encodeURIComponent(query.trim())}`,
+        title: `Find my opportunities: ${query.trim()}`,
+        subtitle: "Natural language search",
+      }
+    : null;
+  const filtered = [...(searchHit ? [searchHit] : []), ...pages, ...jobs]
     .filter((item) => {
       if (!needle) return true;
+      if (item === searchHit) return true;
       return `${item.title} ${item.subtitle}`.toLowerCase().includes(needle);
     })
     .slice(0, 20);
