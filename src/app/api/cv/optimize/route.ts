@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
+import { rejectIfRateLimited } from "@/lib/rate-limit";
 import { optimizeCvHints } from "@/server/letter";
 
 export async function POST(request: Request) {
   try {
+    const limited = rejectIfRateLimited(request, "cv-optimize", 8);
+    if (limited) return limited;
     await requireUser();
     const body = (await request.json().catch(() => null)) as { cvText?: string; target?: string } | null;
     const cvText = body?.cvText?.trim() ?? "";

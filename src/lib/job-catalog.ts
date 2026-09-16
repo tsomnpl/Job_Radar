@@ -112,6 +112,18 @@ export function catalogJobRecords(): JobRecord[] {
     source: job.source,
     language: job.language,
     postedAt: job.postedAt,
+    companyLogo: null,
+    applicationUrl: null,
+    requirements: null,
+    education: null,
+    experience: null,
+    benefits: null,
+    duration: null,
+    contactInfo: null,
+    deadline: null,
+    startDate: null,
+    endDate: null,
+    status: "unpublished",
     active: true,
   }));
 }

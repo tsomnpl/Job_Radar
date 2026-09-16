@@ -19,9 +19,22 @@ const baseJob: JobRecord = {
   languages: ["fr"],
   description: "Stage data remote Cotonou, SQL Excel Python.",
   sourceUrl: null,
-  source: "seed",
+  source: "jobicy",
   language: "fr",
   postedAt: new Date(),
+  companyLogo: null,
+  applicationUrl: null,
+  requirements: null,
+  education: null,
+  experience: null,
+  benefits: null,
+  duration: null,
+  contactInfo: null,
+  deadline: null,
+  startDate: null,
+  endDate: null,
+  status: "published",
+  active: true,
 };
 
 describe("explainMatch", () => {
@@ -43,6 +56,7 @@ describe("explainMatch", () => {
       true,
     );
     expect(match.gaps).not.toContain("sql");
+    expect(match.matchedSkills).toEqual(expect.arrayContaining(["sql", "excel", "data"]));
   });
 
   it("penalizes onsite vs remote preference and missing skills", () => {
@@ -154,5 +168,54 @@ describe("explainMatch", () => {
     expect(jobFitsSearchIntent(internJob, intent)).toBe(true);
     expect(jobFitsSearchIntent(pharmacy, intent)).toBe(false);
     expect(jobFitsSearchIntent(pharmacy, parseIntentHeuristic("stage cybersécurité Togo"))).toBe(false);
+  });
+
+  it("labels eligibility without promising a hire", () => {
+    const intent = parseIntentHeuristic("stage data remote Cotonou");
+    const candidate = buildCandidate(intent, {
+      skills: ["sql", "excel", "python", "data"],
+      languages: ["fr"],
+      locations: ["Cotonou"],
+      seniority: "intern",
+      yearsExperience: 1,
+      remotePreference: "remote",
+      headline: "Étudiant data",
+      education: "Licence informatique",
+      query: intent.query,
+    });
+    const match = explainMatch(baseJob, candidate);
+    expect(match.eligibility.label).toBe("Requirements unclear");
+    expect(match.eligibility.why.toLowerCase()).not.toContain("definitely");
+    expect(match.educationScore).toBeNull();
+    expect(match.requirementsScore).toBeNull();
+  });
+
+  it("keeps list and detail scores aligned when the same query is parsed", () => {
+    const query = "internship cybersecurity remote";
+    const job: JobRecord = {
+      ...baseJob,
+      title: "Blockchain Security Expert Intern - AI Track",
+      company: "CertiK",
+      location: "USA",
+      country: "US",
+      skills: ["cybersecurity"],
+      description: "Remote internship in cybersecurity.",
+    };
+    const rawIntent = {
+      query,
+      keywords: [] as string[],
+      skills: [] as string[],
+      location: null,
+      country: null,
+      remoteType: null,
+      contractType: null,
+      seniority: null,
+      language: null,
+      source: "heuristic" as const,
+    };
+    const rawScore = explainMatch(job, buildCandidate(rawIntent)).score;
+    const parsedScore = explainMatch(job, buildCandidate(parseIntentHeuristic(query))).score;
+    expect(parsedScore).toBeGreaterThanOrEqual(rawScore);
+    expect(parsedScore).toBeGreaterThanOrEqual(70);
   });
 });

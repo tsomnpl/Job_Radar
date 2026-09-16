@@ -1,22 +1,32 @@
 import { logDbError } from "@/lib/db";
-import { isVerifiedOpportunity, toJobRecord } from "@/lib/jobs";
+import { isPublicBoardSource, isVerifiedOpportunity, toJobRecord } from "@/lib/jobs";
+import { isExcludedFromSearch, isPubliclyListed } from "@/lib/job-lifecycle";
 import { prisma } from "@/lib/prisma";
 import type { JobRecord } from "@/lib/types";
 import type { NormalizedJobInput } from "@/lib/import-jobs";
 
-const memoryJobs = new Map<string, JobRecord>();
+const globalStore = globalThis as typeof globalThis & {
+  __jobradarMemoryJobs?: Map<string, JobRecord>;
+};
+const memoryJobs = globalStore.__jobradarMemoryJobs ?? new Map<string, JobRecord>();
+globalStore.__jobradarMemoryJobs = memoryJobs;
 
 export function rememberJob(job: JobRecord): void {
   memoryJobs.set(job.id, job);
 }
 
-export async function upsertJobRecord(
-  data: NormalizedJobInput & { id: string; active?: boolean },
-): Promise<JobRecord | null> {
-  const record = toJobRecord({
+export type JobWriteInput = NormalizedJobInput & {
+  id: string;
+  active?: boolean;
+  status?: string;
+};
+
+function toRecord(data: JobWriteInput): JobRecord {
+  return toJobRecord({
     id: data.id,
     title: data.title,
     company: data.company,
+    companyLogo: data.companyLogo,
     location: data.location,
     country: data.country,
     remoteType: data.remoteType,
@@ -28,20 +38,76 @@ export async function upsertJobRecord(
     skillsJson: data.skillsJson,
     languagesJson: data.languagesJson,
     description: data.description,
+    requirements: data.requirements,
+    education: data.education,
+    experience: data.experience,
+    benefits: data.benefits,
+    duration: data.duration,
+    contactInfo: data.contactInfo,
     sourceUrl: data.sourceUrl,
+    applicationUrl: data.applicationUrl,
     source: data.source,
     language: data.language,
     postedAt: data.postedAt,
-    active: data.active ?? true,
+    deadline: data.deadline,
+    startDate: data.startDate,
+    endDate: data.endDate,
+    status: data.status ?? (data.active ? "published" : "pending"),
+    active: data.active ?? false,
   });
+}
+
+export async function upsertJobRecord(data: JobWriteInput): Promise<JobRecord | null> {
+  const record = toRecord(data);
   rememberJob(record);
   try {
-    const { id, active = true, ...rest } = data;
-    const job = await prisma.job.upsert({
-      where: { fingerprint: data.fingerprint },
-      update: { ...rest, active },
-      create: { id, ...rest, active },
-    });
+    const existing = await prisma.job.findUnique({ where: { fingerprint: data.fingerprint } });
+    const keepPublished = existing?.status === "published";
+    const keepUnpublished = existing?.status === "unpublished";
+    const status = keepPublished
+      ? "published"
+      : keepUnpublished
+        ? "unpublished"
+        : (data.status ?? "pending");
+    const active = status === "published";
+    const { id, ...rest } = data;
+    const payload = {
+      title: rest.title,
+      company: rest.company,
+      companyLogo: existing?.companyLogo ?? rest.companyLogo,
+      location: rest.location,
+      country: rest.country,
+      remoteType: rest.remoteType,
+      contractType: rest.contractType,
+      seniority: rest.seniority,
+      salaryMin: rest.salaryMin,
+      salaryMax: rest.salaryMax,
+      currency: rest.currency,
+      skillsJson: rest.skillsJson,
+      languagesJson: rest.languagesJson,
+      description: rest.description,
+      requirements: existing?.requirements ?? rest.requirements,
+      education: existing?.education ?? rest.education,
+      experience: existing?.experience ?? rest.experience,
+      benefits: existing?.benefits ?? rest.benefits,
+      duration: existing?.duration ?? rest.duration,
+      contactInfo: existing?.contactInfo ?? rest.contactInfo,
+      sourceUrl: rest.sourceUrl,
+      applicationUrl: existing?.applicationUrl ?? rest.applicationUrl,
+      source: rest.source,
+      language: rest.language,
+      postedAt: rest.postedAt,
+      deadline: existing?.deadline ?? rest.deadline,
+      startDate: existing?.startDate ?? rest.startDate,
+      endDate: existing?.endDate ?? rest.endDate,
+      fingerprint: rest.fingerprint,
+      status,
+      active,
+    };
+
+    const job = existing
+      ? await prisma.job.update({ where: { id: existing.id }, data: payload })
+      : await prisma.job.create({ data: { id, ...payload } });
     const stored = toJobRecord(job);
     rememberJob(stored);
     return stored;
@@ -55,22 +121,38 @@ export function isStockJob(job: Pick<JobRecord, "source">): boolean {
   return isVerifiedOpportunity(job);
 }
 
-export async function listActiveJobs(): Promise<JobRecord[]> {
+export async function listPublishedJobs(): Promise<JobRecord[]> {
   try {
     const jobs = await prisma.job.findMany({
-      where: { active: true },
+      where: { active: true, status: "published" },
       orderBy: { postedAt: "desc" },
     });
-    return jobs.map(toJobRecord);
+    return jobs.map(toJobRecord).filter((job) => isStockJob(job) && isPubliclyListed(job));
   } catch (error) {
-    logDbError("listActiveJobs", error);
-    return [...memoryJobs.values()].filter((job) => job.active !== false);
+    logDbError("listPublishedJobs", error);
+    return [...memoryJobs.values()].filter((job) => job.active !== false && isStockJob(job) && isPubliclyListed(job));
   }
 }
 
-/** Offres importées / saisies — pas les pistes IA d'une recherche. */
+export async function listActiveJobs(): Promise<JobRecord[]> {
+  return listPublishedJobs();
+}
+
+/** Offres publiées — pas les pistes IA ni le catalogue seed. */
 export async function listStockJobs(): Promise<JobRecord[]> {
-  return (await listActiveJobs()).filter(isStockJob);
+  return listPublishedJobs();
+}
+
+export async function listSearchableJobs(): Promise<JobRecord[]> {
+  const published = await listPublishedJobs();
+  const merged = new Map<string, JobRecord>();
+  for (const job of published) merged.set(job.id, job);
+  for (const job of memoryJobs.values()) {
+    if (!isStockJob(job)) continue;
+    if (isExcludedFromSearch(job)) continue;
+    if (!merged.has(job.id)) merged.set(job.id, job);
+  }
+  return [...merged.values()];
 }
 
 export async function getJobById(id: string): Promise<JobRecord | null> {
@@ -81,12 +163,24 @@ export async function getJobById(id: string): Promise<JobRecord | null> {
     const job = await prisma.job.findUnique({ where: { id } });
     if (job) {
       const record = toJobRecord(job);
-      return isStockJob(record) ? record : null;
+      if (!isStockJob(record)) return null;
+      if (record.status === "published") return record;
+      if (record.status === "pending" && isPublicBoardSource(record.source)) return record;
     }
   } catch (error) {
     logDbError("getJobById", error);
   }
   return null;
+}
+
+export async function getJobByIdAdmin(id: string): Promise<JobRecord | null> {
+  try {
+    const job = await prisma.job.findUnique({ where: { id } });
+    return job ? toJobRecord(job) : memoryJobs.get(id) ?? null;
+  } catch (error) {
+    logDbError("getJobByIdAdmin", error);
+    return memoryJobs.get(id) ?? null;
+  }
 }
 
 export async function listAllJobs(): Promise<(JobRecord & { active: boolean })[]> {
@@ -95,7 +189,7 @@ export async function listAllJobs(): Promise<(JobRecord & { active: boolean })[]
     return jobs.map((job) => ({ ...toJobRecord(job), active: job.active }));
   } catch (error) {
     logDbError("listAllJobs", error);
-    return [...memoryJobs.values()].map((job) => ({ ...job, active: job.active ?? true }));
+    return [...memoryJobs.values()].map((job) => ({ ...job, active: job.active ?? false }));
   }
 }
 

@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { isPersistedUser, requireAdmin } from "@/lib/auth";
 import { extractJobFromText } from "@/server/extract-job";
+import { rejectIfRateLimited } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    const limited = rejectIfRateLimited(request, "extract", 10);
+    if (limited) return limited;
     const admin = await requireAdmin();
     if (!isPersistedUser(admin)) {
       return NextResponse.json({ error: "DATABASE_UNAVAILABLE" }, { status: 503 });

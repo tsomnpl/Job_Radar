@@ -5,12 +5,14 @@ import { AuthCallout, PageSkeleton } from "@/components/page-shell";
 import { getSessionUser, isPersistedUser } from "@/lib/auth";
 import { withDb } from "@/lib/db";
 import { isClerkConfigured } from "@/lib/env";
+import { requirePageUser } from "@/lib/page-guard";
 import { prisma } from "@/lib/prisma";
 import { withTimeout } from "@/lib/timeout";
 
 export const dynamic = "force-dynamic";
 
-export default function SavedJobsPage() {
+export default async function SavedJobsPage() {
+  await requirePageUser("/saved-jobs");
   return (
     <div className="space-y-6">
       <div>

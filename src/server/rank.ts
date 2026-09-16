@@ -1,8 +1,9 @@
 import { buildCandidate, explainMatch, jobFitsSearchIntent, narrativeFromMatch, selectVerifiedMatches, MIN_MATCH_SCORE } from "@/lib/matching";
+import { parseIntentHeuristic } from "@/lib/intent";
 import { asJsonArray } from "@/lib/normalize";
 import { logDbError } from "@/lib/db";
 import { prisma } from "@/lib/prisma";
-import { getJobById, jobExistsInDb, listStockJobs } from "@/server/jobs-store";
+import { getJobById, jobExistsInDb, listSearchableJobs } from "@/server/jobs-store";
 import { isPersistedUser, type AppUser } from "@/lib/auth";
 import { isVerifiedOpportunity } from "@/lib/jobs";
 import type { CandidateSnapshot, RankedJob, SearchIntent } from "@/lib/types";
@@ -21,6 +22,7 @@ async function loadCandidate(intent: SearchIntent, userId?: string | null): Prom
           yearsExperience: row.yearsExperience,
           remotePreference: (row.remotePreference as CandidateSnapshot["remotePreference"]) ?? null,
           headline: row.headline,
+          education: row.education,
         };
       }
     } catch (error) {
@@ -37,7 +39,7 @@ export async function rankJobsForUser(params: {
   minScore?: number;
 }): Promise<RankedJob[]> {
   const [jobs, candidate] = await Promise.all([
-    listStockJobs(),
+    listSearchableJobs(),
     loadCandidate(params.intent, params.userId),
   ]);
 
@@ -103,18 +105,7 @@ export async function persistSearch(params: {
 export async function matchOneJob(params: { jobId: string; userId?: string | null; query?: string }) {
   const job = await getJobById(params.jobId);
   if (!job || !isVerifiedOpportunity(job)) return null;
-  const intent = {
-    query: params.query ?? "",
-    keywords: [] as string[],
-    skills: [] as string[],
-    location: null,
-    country: null,
-    remoteType: null,
-    contractType: null,
-    seniority: null,
-    language: null,
-    source: "heuristic" as const,
-  };
+  const intent = parseIntentHeuristic(params.query ?? "");
   const candidate = await loadCandidate(intent, params.userId);
   const match = explainMatch(job, candidate);
   return { job, match, candidate };

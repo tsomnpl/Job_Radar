@@ -1,4 +1,5 @@
 import { parseIntentFromJson, parseIntentHeuristic } from "@/lib/intent";
+import { rodiumIntentSchema } from "@/server/ai-schema";
 import type { SearchIntent } from "@/lib/types";
 import { rodiumChatJson } from "@/server/rodium";
 
@@ -24,7 +25,7 @@ export async function resolveIntent(query: string): Promise<SearchIntent> {
       system: SYSTEM,
       user: query,
     });
-    const parsed = parseIntentFromJson(query, result?.json);
+    const parsed = parseIntentFromJson(query, rodiumIntentSchema.safeParse(result?.json).success ? result?.json : null);
     return parsed ?? fallback;
   } catch {
     return fallback;

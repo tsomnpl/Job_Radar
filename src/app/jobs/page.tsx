@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { JobCard } from "@/components/job-card";
 import { EmptyResults } from "@/components/empty-results";
 import { SearchBox } from "@/components/search-box";
@@ -7,6 +8,11 @@ import { rankJobsForUser } from "@/server/rank";
 import { parseIntentHeuristic } from "@/lib/intent";
 import { listStockJobs } from "@/server/jobs-store";
 import { withTimeout } from "@/lib/timeout";
+
+export const metadata: Metadata = {
+  title: "Jobs",
+  description: "Published opportunities on JobRadar. Never invented.",
+};
 
 export const dynamic = "force-dynamic";
 

@@ -1,18 +1,14 @@
 import Link from "next/link";
 
+import { applicationStatusLabel } from "@/lib/jobs";
+
 export type RadarListItem = {
   id: string;
   jobId: string;
   title: string;
   company: string;
   status: string;
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  watching: "Sur le radar",
-  applied: "Candidature envoyée",
-  interviewing: "Entretien",
-  offer: "Offre",
+  date?: string;
 };
 
 export function RadarJobList({
@@ -32,8 +28,9 @@ export function RadarJobList({
           <Link href={`/jobs/${item.jobId}`} className="hover:text-accent">
             <p className="text-xs uppercase tracking-[0.16em] text-muted">{item.company}</p>
             <p className="font-semibold">{item.title}</p>
+            {item.date ? <p className="text-xs text-muted">{item.date}</p> : null}
           </Link>
-          <span className="shrink-0 text-xs text-muted">{STATUS_LABEL[item.status] ?? item.status}</span>
+          <span className="shrink-0 text-xs text-muted">{applicationStatusLabel(item.status)}</span>
         </li>
       ))}
     </ul>

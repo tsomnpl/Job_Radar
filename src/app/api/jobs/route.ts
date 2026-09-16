@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { listStockJobs } from "@/server/jobs-store";
+import { listSearchableJobs } from "@/server/jobs-store";
 
 export async function GET() {
-  const jobs = await listStockJobs();
+  const jobs = await listSearchableJobs();
   return NextResponse.json({ jobs: jobs.slice(0, 50) });
 }

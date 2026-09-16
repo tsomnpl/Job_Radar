@@ -1,147 +1,218 @@
-import { Suspense } from "react";
-import { ImportForm } from "@/components/import-form";
+import Link from "next/link";
+import { AdminJobActions } from "@/components/admin-job-actions";
+import { AdminUserActions } from "@/components/admin-user-actions";
 import { AdminRadarForms } from "@/components/admin-extract-form";
-import { AuthCallout, PageSkeleton } from "@/components/page-shell";
-import { PublishToggle } from "@/components/publish-toggle";
-import { getSessionUser, isPersistedUser } from "@/lib/auth";
-import { withDb } from "@/lib/db";
-import { isClerkConfigured } from "@/lib/env";
+import { ImportForm } from "@/components/import-form";
+import { getAdminOrNull } from "@/lib/admin-page";
+import { displayField, formatContract, formatJobDeadline } from "@/lib/jobs";
 import { prisma } from "@/lib/prisma";
 import { listAllJobs } from "@/server/jobs-store";
 import { withTimeout } from "@/lib/timeout";
 
 export const dynamic = "force-dynamic";
 
-export default function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string; q?: string; type?: string }>;
+}) {
+  const admin = await getAdminOrNull();
+  if (!admin) return null;
+  const { tab = "overview", q = "", type = "" } = await searchParams;
+  const jobs = await withTimeout(listAllJobs(), 2500, []);
+  const query = q.trim().toLowerCase();
+  const typeFilter = type.trim();
+  const filtered = jobs.filter((job) => {
+    if (query && !`${job.title} ${job.company} ${job.location}`.toLowerCase().includes(query)) return false;
+    if (typeFilter && job.contractType !== typeFilter) return false;
+    return true;
+  });
+  const pending = filtered.filter((job) => job.status === "pending");
+  const published = filtered.filter((job) => job.status === "published");
+  const [userCount, searchCount] = await Promise.all([
+    withTimeout(prisma.user.count().catch(() => 0), 2500, 0),
+    withTimeout(prisma.search.count().catch(() => 0), 2500, 0),
+  ]);
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold">Admin radar</h1>
-        <p className="mt-2 text-muted">
-          Pilotage des opportunités. Mode {isClerkConfigured() ? "Clerk" : "démo"}. Les formulaires
-          s&apos;affichent même si Postgres ou Clerk ne répondent pas.
+      {tab === "overview" || !tab ? (
+        <section className="grid gap-4 md:grid-cols-4">
+          <article className="panel p-5">
+            <p className="text-xs uppercase tracking-[0.16em] text-muted">Total</p>
+            <p className="mt-2 text-3xl font-semibold">{jobs.length}</p>
+          </article>
+          <article className="panel p-5">
+            <p className="text-xs uppercase tracking-[0.16em] text-muted">Pending</p>
+            <p className="mt-2 text-3xl font-semibold">{jobs.filter((job) => job.status === "pending").length}</p>
+          </article>
+          <article className="panel p-5">
+            <p className="text-xs uppercase tracking-[0.16em] text-muted">Published</p>
+            <p className="mt-2 text-3xl font-semibold">{jobs.filter((job) => job.status === "published").length}</p>
+          </article>
+          <article className="panel p-5">
+            <p className="text-xs uppercase tracking-[0.16em] text-muted">Users / searches</p>
+            <p className="mt-2 text-3xl font-semibold">
+              {userCount} / {searchCount}
+            </p>
+          </article>
+        </section>
+      ) : null}
+
+      {tab === "overview" ? (
+        <section className="grid gap-4 lg:grid-cols-2">
+          <div className="panel p-6">
+            <h2 className="font-semibold">Import texte (RodiumAI)</h2>
+            <div className="mt-4">
+              <AdminRadarForms />
+            </div>
+          </div>
+          <div className="panel p-6">
+            <h2 className="font-semibold">Import CSV / JSON</h2>
+            <p className="mt-2 text-sm text-muted">Les imports arrivent en pending, puis vous publiez.</p>
+            <div className="mt-4">
+              <ImportForm />
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {tab === "opportunities" || tab === "pending" || tab === "published" ? (
+        <section className="panel overflow-x-auto p-6">
+          <form className="mb-4 flex flex-wrap gap-3">
+            <input type="hidden" name="tab" value={tab} />
+            <input
+              name="q"
+              defaultValue={q}
+              placeholder="Search title, company, location"
+              className="field w-full max-w-md rounded-xl px-3 py-2 text-sm"
+            />
+            <select name="type" defaultValue={type} className="field rounded-xl px-3 py-2 text-sm">
+              <option value="">All types</option>
+              <option value="internship">Internship</option>
+              <option value="employee">Job / Employee</option>
+              <option value="consultant">Consultant</option>
+              <option value="freelance">Freelance</option>
+              <option value="mission">Mission</option>
+              <option value="apprenticeship">Apprenticeship</option>
+              <option value="other">Other</option>
+            </select>
+            <button type="submit" className="rounded-xl border border-line px-3 py-2 text-sm">
+              Filter
+            </button>
+          </form>
+          <OpportunityTable
+            jobs={tab === "pending" ? pending : tab === "published" ? published : filtered}
+            empty={tab === "pending" ? "Aucune offre en attente." : "Aucune offre."}
+          />
+        </section>
+      ) : null}
+
+      {tab === "overview" ? (
+        <p className="text-sm">
+          <Link href="/admin/new" className="text-accent">
+            Add opportunity
+          </Link>
         </p>
-      </div>
+      ) : null}
 
-      <AuthCallout next="/admin" clerkEnabled={isClerkConfigured()} />
-
-      <section className="panel p-6">
-        <h2 className="font-semibold">Importer le texte brut d&apos;une offre</h2>
-        <p className="mt-2 text-sm text-muted">L&apos;IA extraie titre, organisation, lieu et compétences.</p>
-        <div className="mt-4">
-          <AdminRadarForms />
-        </div>
-      </section>
-
-      <section className="panel p-6">
-        <h2 className="font-semibold">Import CSV / JSON</h2>
-        <div className="mt-4">
-          <ImportForm />
-        </div>
-      </section>
-
-      <Suspense fallback={<PageSkeleton title="Chargement du stock admin…" />}>
-        <AdminStock />
-      </Suspense>
+      {tab === "users" ? <AdminUsersTable currentUserId={admin.id} /> : null}
     </div>
   );
 }
 
-async function AdminStock() {
-  const user = await getSessionUser();
-  if (user && user.role !== "ADMIN") {
+function OpportunityTable({
+  jobs,
+  empty,
+}: {
+  jobs: Awaited<ReturnType<typeof listAllJobs>>;
+  empty: string;
+}) {
+  if (!jobs.length) return <p className="text-sm text-muted">{empty}</p>;
+  return (
+    <table className="min-w-full text-left text-sm">
+      <thead className="text-xs uppercase tracking-[0.12em] text-muted">
+        <tr>
+          <th className="pb-3 pr-3">Position</th>
+          <th className="pb-3 pr-3">Company</th>
+          <th className="pb-3 pr-3">Type</th>
+          <th className="pb-3 pr-3">Deadline</th>
+          <th className="pb-3 pr-3">Status</th>
+          <th className="pb-3">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {jobs.map((job) => (
+          <tr key={job.id} className="border-t border-line">
+            <td className="py-3 pr-3 font-medium">{displayField(job.title)}</td>
+            <td className="py-3 pr-3">{displayField(job.company)}</td>
+            <td className="py-3 pr-3">{formatContract(job.contractType)}</td>
+            <td className="py-3 pr-3">{formatJobDeadline(job.deadline)}</td>
+            <td className="py-3 pr-3">{job.status}</td>
+            <td className="py-3">
+              <AdminJobActions jobId={job.id} status={job.status} />
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+async function AdminUsersTable({ currentUserId }: { currentUserId: string }) {
+  const users = await withTimeout(
+    prisma.user.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 200,
+      include: { profile: { select: { id: true } } },
+    }),
+    2500,
+    [],
+  );
+
+  if (!users.length) {
     return (
-      <div className="panel p-8">
-        <h2 className="text-2xl font-semibold">Accès admin refusé</h2>
-        <p className="mt-2 text-muted">
-          Ajoutez votre Clerk user id dans <code>ADMIN_CLERK_USER_IDS</code>.
-        </p>
-        <p className="mt-3 text-sm text-muted">Votre id : {user.clerkUserId}</p>
-      </div>
+      <section className="panel p-6">
+        <p className="text-sm text-muted">Aucun utilisateur JobRadar.</p>
+      </section>
     );
   }
 
-  const dbReady = Boolean(user && isPersistedUser(user));
-  const jobs = await withTimeout(listAllJobs(), 2500, []);
-  const [userCount, searchCount, batches] = dbReady
-    ? await Promise.all([
-        withTimeout(withDb("admin.users", () => prisma.user.count(), 0), 2500, 0),
-        withTimeout(withDb("admin.searches", () => prisma.search.count(), 0), 2500, 0),
-        withTimeout(
-          withDb(
-            "admin.batches",
-            () => prisma.importBatch.findMany({ orderBy: { createdAt: "desc" }, take: 8 }),
-            [],
-          ),
-          2500,
-          [],
-        ),
-      ])
-    : [0, 0, []];
-
   return (
-    <>
-      {!dbReady ? (
-        <p className="text-sm text-warn">
-          Postgres n&apos;est pas joignable : l&apos;import et la publication exigent une DATABASE_URL postgres://.
-        </p>
-      ) : null}
-
-      <section className="grid gap-4 md:grid-cols-4">
-        <article className="panel p-5">
-          <p className="text-xs uppercase tracking-[0.16em] text-muted">Offres</p>
-          <p className="mt-2 text-3xl font-semibold">{jobs.length}</p>
-        </article>
-        <article className="panel p-5">
-          <p className="text-xs uppercase tracking-[0.16em] text-muted">Utilisateurs</p>
-          <p className="mt-2 text-3xl font-semibold">{userCount}</p>
-        </article>
-        <article className="panel p-5">
-          <p className="text-xs uppercase tracking-[0.16em] text-muted">Recherches</p>
-          <p className="mt-2 text-3xl font-semibold">{searchCount}</p>
-        </article>
-        <article className="panel p-5">
-          <p className="text-xs uppercase tracking-[0.16em] text-muted">Publiées</p>
-          <p className="mt-2 text-3xl font-semibold">{jobs.filter((job) => job.active).length}</p>
-        </article>
-      </section>
-
-      <section className="panel p-6">
-        <h2 className="font-semibold">Offres</h2>
-        {jobs.length === 0 ? (
-          <p className="mt-4 text-sm text-muted">
-            0 offre. Collez un texte brut ou un CSV ci-dessus pour alimenter le radar.
-          </p>
-        ) : (
-          <ul className="mt-4 space-y-3 text-sm">
-            {jobs.slice(0, 30).map((job) => (
-              <li key={job.id} className="flex items-center justify-between gap-3 border-b border-line pb-3 last:border-0">
-                <div>
-                  <p className="font-medium">{job.title}</p>
-                  <p className="text-xs text-muted">
-                    {job.company} · {job.location} · {job.source} · {job.active ? "publiée" : "masquée"}
-                  </p>
-                </div>
-                <PublishToggle jobId={job.id} active={Boolean(job.active)} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="panel p-6">
-        <h2 className="font-semibold">Derniers imports</h2>
-        <ul className="mt-4 space-y-2 text-sm text-muted">
-          {batches.map((batch) => (
-            <li key={batch.id}>
-              {batch.createdAt.toISOString().slice(0, 16)} · {batch.format} · +{batch.createdCount} / ~
-              {batch.updatedCount} / skip {batch.skippedCount}
-              {batch.filename ? ` · ${batch.filename}` : ""}
-            </li>
+    <section className="panel overflow-x-auto p-6">
+      <h2 className="mb-4 font-semibold">Users</h2>
+      <p className="mb-4 text-sm text-muted">
+        Delete profile enlève le CV / headline. Delete user data enlève les données JobRadar. Le compte Clerk
+        n&apos;est pas supprimé.
+      </p>
+      <table className="min-w-full text-left text-sm">
+        <thead className="text-xs uppercase tracking-[0.12em] text-muted">
+          <tr>
+            <th className="pb-3 pr-3">Email</th>
+            <th className="pb-3 pr-3">Name</th>
+            <th className="pb-3 pr-3">Role</th>
+            <th className="pb-3 pr-3">Profile</th>
+            <th className="pb-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map((user) => (
+            <tr key={user.id} className="border-t border-line">
+              <td className="py-3 pr-3">{user.email ?? "Not specified"}</td>
+              <td className="py-3 pr-3">{user.name ?? "Not specified"}</td>
+              <td className="py-3 pr-3">{user.role}</td>
+              <td className="py-3 pr-3">{user.profile ? "Yes" : "No"}</td>
+              <td className="py-3">
+                {user.id === currentUserId ? (
+                  <span className="text-xs text-muted">You</span>
+                ) : (
+                  <AdminUserActions userId={user.id} hasProfile={Boolean(user.profile)} />
+                )}
+              </td>
+            </tr>
           ))}
-          {batches.length === 0 ? <li>Aucun import encore.</li> : null}
-        </ul>
-      </section>
-    </>
+        </tbody>
+      </table>
+    </section>
   );
 }
