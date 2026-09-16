@@ -3,7 +3,7 @@ import { Pill, ScoreRing } from "@/components/brand";
 import { CompanyLogo } from "@/components/company-logo";
 import { DeadlineBadge } from "@/components/deadline-badge";
 import { OpportunityDna } from "@/components/opportunity-dna";
-import { t, type AppLang } from "@/i18n/messages";
+import { type AppLang } from "@/i18n/messages";
 import { formatContract, formatRemote, formatSeniority } from "@/lib/jobs";
 import type { RankedJob } from "@/lib/types";
 

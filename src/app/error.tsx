@@ -1,14 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { LANG_COOKIE, parseLang, t, type AppLang } from "@/i18n/messages";
-
-function cookieLang(): AppLang {
-  if (typeof document === "undefined") return "fr";
-  const match = document.cookie.match(new RegExp(`(?:^|; )${LANG_COOKIE}=([^;]*)`));
-  return parseLang(match?.[1]);
-}
+import { useEffect } from "react";
+import { t } from "@/i18n/messages";
 
 export default function ErrorPage({
   error,
@@ -17,11 +11,11 @@ export default function ErrorPage({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const [lang, setLang] = useState<AppLang>("fr");
   useEffect(() => {
-    setLang(cookieLang());
     console.error("[page]", error.message);
   }, [error]);
+
+  const lang = "fr" as const;
 
   return (
     <div className="panel mx-auto max-w-lg p-8 text-center">
