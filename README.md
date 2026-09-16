@@ -14,14 +14,14 @@ Produit indépendant. **Ne pas mélanger avec FlyerMint / `1st_SaaS`.**
 - Dashboard (recherches, matches, radar)
 - Import admin CSV / JSON
 - Collecte d’offres **réelles** (Jobicy, Remote OK, Remotive, The Muse, Himalayas) + cron quotidien
-- **Resend** — emails de matching / digest / Apply (serveur uniquement ; inactif sans `RESEND_API_KEY` + `EMAIL_FROM` vérifié)
+- **Gmail SMTP** — emails welcome / matching / deadline / digest (serveur uniquement ; inactif sans `GMAIL_USER` + `GMAIL_APP_PASSWORD`)
 - Radar personnel : sauvegardes `/saved-jobs`, candidatures `/applications`
 
 ## Stack
 
 - Next.js 16 (App Router) + TypeScript + Tailwind CSS 4
 - Clerk
-- Resend (emails, serveur)
+- Gmail SMTP (Nodemailer, serveur)
 - Prisma + **PostgreSQL** (stock vide au départ, puis APIs publiques + import admin)
 - RodiumAI (`POST /v1/chat/completions`) — parse l’intention, jamais une offre inventée
 - Vitest
@@ -58,7 +58,7 @@ Les pages `/search`, `/jobs`, `/dashboard` tapent la base. **SQLite (`file:./dev
    - `RODIUMAI_API_KEY` (`rd_sk_…`, serveur uniquement)
    - `RODIUMAI_BASE_URL=https://api.rodiumai.io/v1`
    - `RODIUMAI_MODEL=rodiumai/smart`
-   - `RESEND_API_KEY` / `EMAIL_FROM` (serveur uniquement ; les deux + domaine Resend vérifié, sinon aucun email n’est envoyé)
+   - `GMAIL_USER` / `GMAIL_APP_PASSWORD` / `EMAIL_FROM_NAME` (serveur uniquement ; App Password Google, sinon aucun email n’est envoyé)
    - `CRON_SECRET` (optionnel mais recommandé)
 4. **Clerk Production vs Development**
    - JobRadar est branché sur l’app Clerk `app_3JKP12NGJMbeVuqi5HAaeGLEQYX`. Les clés **Production** (`pk_live_`) ne doivent **pas** être remplacées par `pk_test_`.
@@ -83,8 +83,8 @@ Voir `docs/FONCTIONNEMENT.md` pour le parcours produit (compte, collecte publiqu
 | `ADMIN_EMAIL` | Email Clerk vérifié du seul administrateur (fail-closed : vide = personne) |
 | `ADMIN_CLERK_USER_IDS` | IDs Clerk admin optionnels (liste vide ≠ tout le monde admin) |
 | `DATABASE_URL` | `postgresql://…` obligatoire en production |
-| `RESEND_API_KEY` / `EMAIL_FROM` | Emails (serveur). Les deux obligatoires, sinon aucun envoi |
-| `CRON_SECRET` | Auth du cron `/api/cron/radar` (quotidien 06:00 UTC) |
+| `GMAIL_USER` / `GMAIL_APP_PASSWORD` / `EMAIL_FROM_NAME` | Emails Gmail SMTP 587 (serveur). App Password obligatoire, sinon aucun envoi |
+| `CRON_SECRET` | Auth des crons `/api/cron/radar` (06:00 UTC), `/api/cron/deadlines` (07:00), `/api/cron/digest` (lundi 08:00) |
 
 Ne jamais committer ni afficher les secrets (`sk_`, `rd_sk_`, `re_`).
 

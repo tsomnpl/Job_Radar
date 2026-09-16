@@ -110,6 +110,7 @@ export function catalogJobRecords(): JobRecord[] {
     description: job.description,
     sourceUrl: job.sourceUrl,
     source: job.source,
+    category: null,
     language: job.language,
     postedAt: job.postedAt,
     companyLogo: null,

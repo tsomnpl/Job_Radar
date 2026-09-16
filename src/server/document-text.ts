@@ -3,6 +3,14 @@ const PDF = "application/pdf";
 const DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 const TEXT = "text/plain";
 
+export function isPdfMagic(buffer: Buffer): boolean {
+  return buffer.subarray(0, 5).toString("ascii") === "%PDF-";
+}
+
+export function isZipMagic(buffer: Buffer): boolean {
+  return buffer.length >= 4 && buffer[0] === 0x50 && buffer[1] === 0x4b && buffer[2] === 0x03 && buffer[3] === 0x04;
+}
+
 export function isAllowedResumeFile(file: File): boolean {
   if (file.size > MAX_BYTES) return false;
   const type = file.type.toLowerCase();
@@ -33,12 +41,14 @@ export async function extractResumeText(file: File): Promise<string> {
   }
 
   if (type === DOCX || name.endsWith(".docx")) {
+    if (!isZipMagic(buffer)) throw new Error("UNSUPPORTED_FILE");
     const mammoth = await import("mammoth");
     const result = await mammoth.extractRawText({ buffer });
     return result.value.trim();
   }
 
   if (type === PDF || name.endsWith(".pdf")) {
+    if (!isPdfMagic(buffer)) throw new Error("UNSUPPORTED_FILE");
     try {
       const unpdf = await import("unpdf");
       const data = new Uint8Array(buffer);

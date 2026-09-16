@@ -3,10 +3,11 @@ import { Pill, ScoreRing } from "@/components/brand";
 import { CompanyLogo } from "@/components/company-logo";
 import { DeadlineBadge } from "@/components/deadline-badge";
 import { OpportunityDna } from "@/components/opportunity-dna";
+import { t, type AppLang } from "@/i18n/messages";
 import { formatContract, formatRemote, formatSeniority } from "@/lib/jobs";
 import type { RankedJob } from "@/lib/types";
 
-export function JobCard({ job, query }: { job: RankedJob; query?: string }) {
+export function JobCard({ job, query, lang = "fr" }: { job: RankedJob; query?: string; lang?: AppLang }) {
   const topReason = job.match.reasons.find((reason) => reason.polarity === "positive") ?? job.match.reasons[0];
   const href = query?.trim() ? `/jobs/${job.id}?q=${encodeURIComponent(query.trim())}` : `/jobs/${job.id}`;
   return (
@@ -41,7 +42,7 @@ export function JobCard({ job, query }: { job: RankedJob; query?: string }) {
         <p className="mt-2 text-xs text-warn">Potential gaps : {job.match.gaps.slice(0, 4).join(", ")}</p>
       ) : null}
       <div className="mt-4 hidden md:block">
-        <OpportunityDna job={job} compact />
+        <OpportunityDna job={job} compact lang={lang} />
       </div>
     </Link>
   );

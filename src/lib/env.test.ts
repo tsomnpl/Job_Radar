@@ -17,7 +17,8 @@ const ORIGINAL = {
   publishable: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
   secret: process.env.CLERK_SECRET_KEY,
   proxy: process.env.NEXT_PUBLIC_CLERK_PROXY_URL,
-  resend: process.env.RESEND_API_KEY,
+  gmailUser: process.env.GMAIL_USER,
+  gmailPass: process.env.GMAIL_APP_PASSWORD,
   from: process.env.EMAIL_FROM,
   appUrl: process.env.NEXT_PUBLIC_APP_URL,
   vercel: process.env.VERCEL,
@@ -29,7 +30,8 @@ afterEach(() => {
   restore("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", ORIGINAL.publishable);
   restore("CLERK_SECRET_KEY", ORIGINAL.secret);
   restore("NEXT_PUBLIC_CLERK_PROXY_URL", ORIGINAL.proxy);
-  restore("RESEND_API_KEY", ORIGINAL.resend);
+  restore("GMAIL_USER", ORIGINAL.gmailUser);
+  restore("GMAIL_APP_PASSWORD", ORIGINAL.gmailPass);
   restore("EMAIL_FROM", ORIGINAL.from);
   restore("NEXT_PUBLIC_APP_URL", ORIGINAL.appUrl);
   restore("VERCEL", ORIGINAL.vercel);
@@ -130,14 +132,13 @@ describe("parseEmailFrom", () => {
 });
 
 describe("isEmailConfigured", () => {
-  it("is not functional until RESEND_API_KEY and a valid EMAIL_FROM exist", () => {
-    delete process.env.RESEND_API_KEY;
-    process.env.EMAIL_FROM = "JobRadar <alerts@jobradar.app>";
+  it("is not functional until GMAIL_USER and GMAIL_APP_PASSWORD exist", () => {
+    delete process.env.GMAIL_USER;
+    delete process.env.GMAIL_APP_PASSWORD;
     expect(isEmailConfigured()).toBe(false);
-    process.env.RESEND_API_KEY = "re_test";
-    process.env.EMAIL_FROM = "noreply@example.com";
+    process.env.GMAIL_USER = "alerts@gmail.com";
     expect(isEmailConfigured()).toBe(false);
-    process.env.EMAIL_FROM = "JobRadar <alerts@jobradar.app>";
+    process.env.GMAIL_APP_PASSWORD = "xxxx xxxx xxxx xxxx";
     expect(isEmailConfigured()).toBe(true);
   });
 });

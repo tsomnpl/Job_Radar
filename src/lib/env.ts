@@ -135,7 +135,7 @@ export function parseEmailFrom(raw?: string | null): string | null {
 }
 
 export function isEmailConfigured(): boolean {
-  return Boolean(process.env.RESEND_API_KEY?.trim() && parseEmailFrom(process.env.EMAIL_FROM));
+  return Boolean(process.env.GMAIL_USER?.trim() && process.env.GMAIL_APP_PASSWORD?.trim());
 }
 
 export function rodiumBaseUrl(): string {

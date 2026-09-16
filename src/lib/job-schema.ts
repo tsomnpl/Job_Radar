@@ -75,6 +75,9 @@ export const opportunityFormSchema = z.object({
   contactInfo: optionalText,
   requirements: optionalText,
   publishNow: z.boolean().optional(),
+  category: optionalText,
+  source: optionalText,
+  status: z.enum(["pending", "published", "unpublished", "archived"]).optional(),
 });
 
 export type OpportunityFormValues = z.infer<typeof opportunityFormSchema>;

@@ -4,15 +4,18 @@ import { Pill } from "@/components/brand";
 import { ApplyOfficialButton } from "@/components/apply-official-button";
 import { CompanyLogo } from "@/components/company-logo";
 import { CoverLetterPanel } from "@/components/cover-letter-panel";
+import { CvVersusOffer } from "@/components/cv-versus-offer";
 import { DeadlineBadge } from "@/components/deadline-badge";
 import { MatchWhy } from "@/components/match-why";
 import { OpportunityCopilot } from "@/components/opportunity-copilot";
 import { OpportunityDna } from "@/components/opportunity-dna";
 import { OpportunityVerification } from "@/components/opportunity-verification";
 import { SaveJobButton } from "@/components/save-job-button";
+import { getRequestLang } from "@/i18n";
 import { getSessionUser, isPersistedUser } from "@/lib/auth";
 import { withDb } from "@/lib/db";
 import { isClerkConfigured } from "@/lib/env";
+import { recordJobView } from "@/server/job-views";
 import {
   displayField,
   formatContract,
@@ -56,9 +59,13 @@ export default async function JobDetailPage({
   const queryParams = await searchParams;
   const fromQuery = (Array.isArray(queryParams.q) ? queryParams.q[0] : queryParams.q)?.trim() ?? "";
   const user = await getSessionUser();
+  const lang = await getRequestLang();
   const matched = await matchOneJob({ jobId: id, userId: user?.id, query: fromQuery || undefined });
   if (!matched) notFound();
-  const { job, match } = matched;
+  const { job, match, candidate } = matched;
+  if (user && isPersistedUser(user)) {
+    void recordJobView(user.id, job.id);
+  }
   const narrative = await explainNarrative(job, match);
   const officialUrl = jobApplicationUrl(job);
   const persisted = Boolean(user && isPersistedUser(user));
@@ -104,7 +111,7 @@ export default async function JobDetailPage({
           <Pill>{salary ?? displayField(null)}</Pill>
         </div>
         <div className="mt-6">
-          <OpportunityDna job={job} />
+          <OpportunityDna job={job} lang={lang} />
         </div>
         <dl className="mt-6 grid gap-2 text-sm">
           <div className="flex gap-2">
@@ -148,6 +155,7 @@ export default async function JobDetailPage({
             signedIn={signedIn}
             clerkEnabled={isClerkConfigured()}
             alreadyApplied={Boolean(application)}
+            lang={lang}
           />
           {officialUrl ? (
             <a
@@ -172,6 +180,14 @@ export default async function JobDetailPage({
         <div className="mt-6">
           <OpportunityVerification job={job} />
         </div>
+        <div className="mt-6">
+          <CvVersusOffer
+            match={match}
+            jobEducation={job.education}
+            candidateEducation={candidate.education}
+            lang={lang}
+          />
+        </div>
       </article>
 
       <aside className="space-y-4">
@@ -181,7 +197,7 @@ export default async function JobDetailPage({
             Sign in to generate a cover letter for this verified offer.
           </section>
         )}
-        <OpportunityCopilot jobId={job.id} signedIn={signedIn} />
+        <OpportunityCopilot jobId={job.id} signedIn={signedIn} lang={lang} />
       </aside>
     </div>
   );

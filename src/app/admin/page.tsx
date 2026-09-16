@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AdminJobActions } from "@/components/admin-job-actions";
 import { AdminUserActions } from "@/components/admin-user-actions";
 import { AdminRadarForms } from "@/components/admin-extract-form";
+import { AdminEmailTest } from "@/components/admin-email-test";
 import { ImportForm } from "@/components/import-form";
 import { getAdminOrNull } from "@/lib/admin-page";
 import { displayField, formatContract, formatJobDeadline } from "@/lib/jobs";
@@ -74,6 +75,7 @@ export default async function AdminPage({
               <ImportForm />
             </div>
           </div>
+          <AdminEmailTest />
         </section>
       ) : null}
 

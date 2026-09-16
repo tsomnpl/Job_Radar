@@ -38,6 +38,9 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
             locations: asJsonArray(profile.locationsJson),
             education: profile.education,
             seniority: profile.seniority,
+            cvText: profile.cvText,
+            domains: asJsonArray(profile.domainsJson),
+            keywords: asJsonArray(profile.keywordsJson),
           }
         : null,
       question,

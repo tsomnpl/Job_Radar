@@ -25,6 +25,18 @@ export function AdminJobActions({
     router.refresh();
   }
 
+  async function archive() {
+    if (!confirm("Archive this opportunity? It stays in the database but leaves the active catalog.")) return;
+    setPending(true);
+    await fetch(`/api/admin/jobs/${jobId}/publish`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ archive: true }),
+    });
+    setPending(false);
+    router.refresh();
+  }
+
   async function remove() {
     if (!confirm("Delete this opportunity? This cannot be undone.")) return;
     setPending(true);
@@ -47,6 +59,9 @@ export function AdminJobActions({
           Publish
         </button>
       )}
+      <button type="button" disabled={pending} onClick={archive} className="rounded-full border border-line px-3 py-1 text-xs">
+        Archive
+      </button>
       <button type="button" disabled={pending} onClick={remove} className="rounded-full border border-danger px-3 py-1 text-xs text-danger">
         Delete
       </button>

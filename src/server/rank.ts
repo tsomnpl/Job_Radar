@@ -23,6 +23,10 @@ async function loadCandidate(intent: SearchIntent, userId?: string | null): Prom
           remotePreference: (row.remotePreference as CandidateSnapshot["remotePreference"]) ?? null,
           headline: row.headline,
           education: row.education,
+          domains: asJsonArray(row.domainsJson),
+          contractTypes: asJsonArray(row.contractTypesJson),
+          keywords: asJsonArray(row.keywordsJson),
+          cvText: row.cvText,
         };
       }
     } catch (error) {

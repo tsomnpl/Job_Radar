@@ -46,13 +46,16 @@ Parcours une fois le compte chargé :
 
 Variables : `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `NEXT_PUBLIC_CLERK_PROXY_URL` (Production seulement), URLs `/sign-in` `/sign-up`.
 
-## 2b. Emails (Resend)
+## 2b. Emails (Gmail SMTP)
 
-Pas de mailer maison. Service unique `src/server/email.ts` (import `server-only`, `RESEND_API_KEY` jamais exposée au frontend).
+Transport live : Nodemailer → `smtp.gmail.com:587` (`src/server/email-service.ts`). Resend n’est pas le transport actif.
 
-- `EMAIL_FROM` = adresse d’un domaine **vérifié** chez Resend (pas `@example.com`).
-- Tant que `RESEND_API_KEY` **et** `EMAIL_FROM` valides ne sont pas configurés, **aucun envoi** (`email.functional: false`).
-- Usages : matching / nouvelles opportunités (`daily_digest` via cron `GET /api/cron/radar`), notification Apply (`notice` + lien officiel), éventuellement résumé quotidien (même cron, cooldown 20 h).
+- `GMAIL_USER` = adresse Gmail (ou Google Workspace) d’envoi.
+- `GMAIL_APP_PASSWORD` = **mot de passe d’application** (2FA Google obligatoire), pas le mot de passe du compte.
+- `EMAIL_FROM_NAME` = nom d’affichage (défaut `JobRadar`).
+- Tant que `GMAIL_USER` **et** `GMAIL_APP_PASSWORD` ne sont pas configurés, **aucun envoi** (`email.functional: false`).
+- Usages : welcome (1× à la création de compte), nouvelles opportunités (opt-in `emailNotifications` + `newOpportunityAlerts`), rappels J-2 (`deadlineAlerts`), digest lundi (`weeklyDigest` off par défaut), test admin, notice Apply.
+- Idempotence : table `EmailLog.eventKey`. Un échec SMTP ne casse pas la recherche ni le cron.
 
 ## 3. Données : tout part de zéro
 
@@ -126,7 +129,7 @@ Pas de Money Fusion. Pas de crawl 24 h / CAPTCHA / LinkedIn-only.
 ## 8. Fichiers clés
 
 - Auth : `src/lib/auth.ts`, `src/proxy.ts`, `src/app/%5F%5Fclerk/`
-- Emails Resend : `src/server/email.ts`, `src/server/alerts.ts`
+- Emails Gmail SMTP : `src/server/email-service.ts`, `src/server/alerts.ts`, `src/server/email-log.ts`
 - Matching : `src/lib/matching.ts`
 - Stock : `src/server/jobs-store.ts`
 - Collecte publique : `src/server/collect.ts`, `src/server/public-sources.ts`
@@ -138,5 +141,5 @@ Pas de Money Fusion. Pas de crawl 24 h / CAPTCHA / LinkedIn-only.
 
 - Scraping LinkedIn (volontairement interdit)
 - ReliefWeb jobs API (v1 410, v2 exige un `appname` approuvé — non utilisé)
-- Envoi email **réel** tant que Resend n’a pas `RESEND_API_KEY` + domaine/`EMAIL_FROM` vérifiés
+- Envoi email **réel** tant que Gmail n’a pas `GMAIL_USER` + `GMAIL_APP_PASSWORD` (App Password)
 - Clerk **Production** tant que le domaine perso + Dashboard proxy + premier Sign Up Production ne sont pas faits

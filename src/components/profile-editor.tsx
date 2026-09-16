@@ -15,6 +15,27 @@ export async function ProfileEditor() {
           null,
         )
       : null;
+  const prefs =
+    user && isPersistedUser(user)
+      ? await withTimeout(
+          withDb(
+            "profile.prefs",
+            () =>
+              prisma.user.findUnique({
+                where: { id: user.id },
+                select: {
+                  emailNotifications: true,
+                  newOpportunityAlerts: true,
+                  deadlineAlerts: true,
+                  weeklyDigest: true,
+                },
+              }),
+            null,
+          ),
+          2500,
+          null,
+        )
+      : null;
 
   return (
     <ProfileQuickForm
@@ -23,6 +44,13 @@ export async function ProfileEditor() {
       initialLocations={asJsonArray(profile?.locationsJson).join(", ")}
       initialSeniority={profile?.seniority ?? ""}
       initialRemote={profile?.remotePreference ?? ""}
+      initialDomains={asJsonArray(profile?.domainsJson).join(", ")}
+      initialTypes={asJsonArray(profile?.contractTypesJson).join(", ")}
+      initialKeywords={asJsonArray(profile?.keywordsJson).join(", ")}
+      emailNotifications={prefs?.emailNotifications ?? false}
+      newOpportunityAlerts={prefs?.newOpportunityAlerts ?? true}
+      deadlineAlerts={prefs?.deadlineAlerts ?? true}
+      weeklyDigest={prefs?.weeklyDigest ?? false}
       hasProfile={Boolean(profile)}
     />
   );

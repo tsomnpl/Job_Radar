@@ -218,4 +218,23 @@ describe("explainMatch", () => {
     expect(parsedScore).toBeGreaterThanOrEqual(rawScore);
     expect(parsedScore).toBeGreaterThanOrEqual(70);
   });
+
+  it("merges profile keywords and domains into the candidate query", () => {
+    const intent = parseIntentHeuristic("stage");
+    const candidate = buildCandidate(intent, {
+      skills: ["sql"],
+      languages: ["fr"],
+      locations: ["Cotonou"],
+      seniority: "intern",
+      yearsExperience: 1,
+      remotePreference: "remote",
+      headline: "Étudiant",
+      query: intent.query,
+      keywords: ["python"],
+      domains: ["data"],
+    });
+    expect(candidate.skills).toEqual(expect.arrayContaining(["sql", "python"]));
+    expect(candidate.query).toMatch(/python/);
+    expect(candidate.query).toMatch(/data/);
+  });
 });

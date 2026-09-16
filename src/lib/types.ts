@@ -39,6 +39,10 @@ export type CandidateSnapshot = {
   remotePreference: RemoteType | null;
   headline: string | null;
   query: string;
+  contractTypes?: string[];
+  keywords?: string[];
+  domains?: string[];
+  cvText?: string | null;
 };
 
 export type MatchReason = {
@@ -109,6 +113,7 @@ export type JobInput = {
   sourceUrl?: string | null;
   applicationUrl?: string | null;
   source?: string | null;
+  category?: string | null;
   language?: string | null;
   postedAt?: string | Date | null;
   deadline?: string | Date | null;
@@ -143,6 +148,7 @@ export type JobRecord = {
   sourceUrl: string | null;
   applicationUrl: string | null;
   source: string;
+  category?: string | null;
   language: string;
   postedAt: Date;
   deadline: Date | null;

@@ -196,7 +196,14 @@ function overlapScore(left: string | null | undefined, right: string | null | un
 function requirementsScoreFor(candidate: CandidateSnapshot, job: JobRecord): number | null {
   const requirements = job.requirements?.trim();
   if (!requirements) return null;
-  const profileText = [candidate.headline, ...candidate.skills, candidate.education ?? ""].join(" ");
+  const profileText = [
+    candidate.headline,
+    ...candidate.skills,
+    ...(candidate.keywords ?? []),
+    ...(candidate.domains ?? []),
+    candidate.education ?? "",
+    candidate.cvText ?? "",
+  ].join(" ");
   if (!profileText.trim()) return 0;
   return overlapScore(profileText, requirements) ?? 0;
 }
@@ -235,7 +242,7 @@ export function assessEligibility(
 
 export function buildCandidate(intent: SearchIntent, profile?: Partial<CandidateSnapshot> | null): CandidateSnapshot {
   return {
-    skills: unique([...(profile?.skills ?? []), ...intent.skills].map(normalizeSkill)),
+    skills: unique([...(profile?.skills ?? []), ...intent.skills, ...(profile?.keywords ?? [])].map(normalizeSkill)),
     languages: unique([...(profile?.languages ?? []), ...(intent.language ? [intent.language] : [])]),
     locations: unique(
       [intent.location, intent.country, ...(profile?.locations ?? [])].filter((item): item is string => Boolean(item)),
@@ -244,8 +251,14 @@ export function buildCandidate(intent: SearchIntent, profile?: Partial<Candidate
     seniority: intent.seniority ?? profile?.seniority ?? null,
     yearsExperience: profile?.yearsExperience ?? null,
     remotePreference: intent.remoteType ?? profile?.remotePreference ?? null,
-    headline: profile?.headline ?? null,
-    query: intent.query,
+    headline: profile?.headline ?? profile?.domains?.join(", ") ?? null,
+    query: [intent.query, ...(profile?.keywords ?? []), ...(profile?.domains ?? []), ...(profile?.contractTypes ?? [])]
+      .filter(Boolean)
+      .join(" "),
+    contractTypes: profile?.contractTypes ?? [],
+    keywords: profile?.keywords ?? [],
+    domains: profile?.domains ?? [],
+    cvText: profile?.cvText ?? null,
   };
 }
 

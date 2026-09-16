@@ -43,14 +43,15 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       contactInfo: input.contactInfo,
       sourceUrl: input.sourceUrl,
       applicationUrl: input.applicationUrl,
-      source: existing.source || "manual",
+      source: input.source || existing.source || "manual",
+      category: input.category,
       language: input.language,
       postedAt: input.postedAt ?? existing.postedAt,
       deadline: input.deadline,
       startDate: input.startDate,
       endDate: input.endDate,
     });
-    const status = input.publishNow ? "published" : existing.status;
+    const status = input.publishNow ? "published" : input.status || existing.status;
     const job = await prisma.job.update({
       where: { id },
       data: { ...normalized, status, active: status === "published" },

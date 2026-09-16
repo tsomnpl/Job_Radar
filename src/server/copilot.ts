@@ -42,6 +42,9 @@ export async function answerOpportunityCopilot(params: {
     locations?: string[];
     summary?: string;
     languages?: string[];
+    cvText?: string | null;
+    domains?: string[];
+    keywords?: string[];
   } | null;
   question: string;
 }): Promise<{ answer: string; source: "rodium" | "deterministic" }> {
@@ -76,6 +79,10 @@ JSON : {"answer": string}`,
             education: params.profile.education,
             seniority: params.profile.seniority,
             locations: params.profile.locations,
+            summary: params.profile.summary?.slice(0, 800) ?? null,
+            cvText: params.profile.cvText?.slice(0, 2500) ?? null,
+            domains: params.profile.domains,
+            keywords: params.profile.keywords,
           }
         : null,
       match: {
