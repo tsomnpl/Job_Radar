@@ -6,6 +6,7 @@ import { Pill, ScoreRing } from "@/components/brand";
 import { SearchBox } from "@/components/search-box";
 import { OpportunityRadar } from "@/components/opportunity-radar";
 import { OpportunityTimeline } from "@/components/opportunity-timeline";
+import { LandingRadar } from "@/components/radar-dish";
 import { formatOpportunityType } from "@/lib/jobs";
 import { isClerkConfigured } from "@/lib/env";
 import { parseIntentHeuristic } from "@/lib/intent";
@@ -115,23 +116,21 @@ export default function HomePage() {
   return (
     <div data-landing className="pb-0">
       <section className="landing-hero relative flex items-center overflow-hidden">
-        <div className="pointer-events-none absolute inset-y-8 right-[-12%] hidden w-[52%] md:block">
-          <div className="relative mx-auto aspect-square max-w-xl">
-            <span className="radar-pulse absolute inset-[8%] rounded-full border border-accent/25" />
-            <span className="radar-pulse absolute inset-[22%] rounded-full border border-accent/30" style={{ animationDelay: "1.1s" }} />
-            <span className="absolute inset-[36%] rounded-full border border-line" />
-            <Image
-              src="/brand/jobradar-logo.png"
-              alt="Logo JobRadar"
-              width={280}
-              height={280}
-              className="absolute inset-0 m-auto rounded-[2rem] shadow-2xl"
-              priority
-            />
-          </div>
-        </div>
+        <LandingRadar>
+          <Image
+            src="/brand/jobradar-logo.png"
+            alt="Logo JobRadar"
+            width={220}
+            height={220}
+            className="jr-float absolute left-1/2 top-1/2 z-10 rounded-[2rem] shadow-2xl"
+            priority
+          />
+        </LandingRadar>
         <Shell className="relative z-10 py-16 md:py-24">
-          <p className="text-xs font-medium uppercase tracking-[0.28em] text-accent">Opportunity intelligence</p>
+          <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.28em] text-accent">
+            <span className="jr-live-dot" aria-hidden />
+            Opportunity intelligence · scanning
+          </p>
           <h1 className="mt-5 max-w-3xl text-4xl font-semibold leading-[1.08] tracking-tight md:text-6xl lg:text-7xl">
             Your next opportunity, before you miss it.
           </h1>
@@ -183,10 +182,12 @@ export default function HomePage() {
       <section className="border-y border-line bg-elev/60 py-6">
         <Shell>
           <p className="text-xs uppercase tracking-[0.2em] text-muted">Sources consultées — URL officielle uniquement</p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {SOURCES.map((source) => (
-              <Pill key={source}>{source}</Pill>
-            ))}
+          <div className="jr-marquee-mask mt-4">
+            <div className="jr-marquee">
+              {[...SOURCES, ...SOURCES].map((source, index) => (
+                <Pill key={`${source}-${index}`}>{source}</Pill>
+              ))}
+            </div>
           </div>
         </Shell>
       </section>

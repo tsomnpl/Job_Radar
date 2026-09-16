@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { RadarDish } from "@/components/radar-dish";
 import { radarDotsFromJobs, type RadarDot } from "@/lib/radar-view";
 
 export type RadarJobInput = {
@@ -23,6 +24,9 @@ export function OpportunityRadar({ jobs }: { jobs: RadarJobInput[] }) {
         <p className="mt-2 text-sm text-muted">
           Aucune opportunité réelle n&apos;est actuellement détectée. JobRadar n&apos;affiche pas de points fictifs.
         </p>
+        <div className="relative mx-auto mt-4 aspect-square w-full max-w-xs opacity-80">
+          <RadarDish className="h-full w-full" />
+        </div>
       </section>
     );
   }
@@ -37,11 +41,8 @@ export function OpportunityRadar({ jobs }: { jobs: RadarJobInput[] }) {
         <p className="max-w-[12rem] text-right text-xs text-muted">Hover ou focus un point. Clic pour ouvrir.</p>
       </div>
       <div className="relative mx-auto mt-4 aspect-square w-full max-w-md">
-        <svg viewBox="0 0 100 100" className="h-full w-full" role="img" aria-label="Radar des opportunités réelles">
-          <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" className="text-[var(--line)]" strokeWidth="0.4" />
-          <circle cx="50" cy="50" r="32" fill="none" stroke="currentColor" className="text-[var(--line)]" strokeWidth="0.4" />
-          <circle cx="50" cy="50" r="18" fill="none" stroke="currentColor" className="text-[var(--line)]" strokeWidth="0.4" />
-          <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" className="radar-pulse text-accent" strokeWidth="0.35" />
+        <RadarDish className="absolute inset-0 h-full w-full" />
+        <svg viewBox="0 0 100 100" className="relative h-full w-full" role="img" aria-label="Radar des opportunités réelles">
           {dots.map((dot) => (
             <a key={dot.id} href={`/jobs/${dot.id}`} aria-label={`${dot.title} at ${dot.company}`}>
               <circle
@@ -50,10 +51,10 @@ export function OpportunityRadar({ jobs }: { jobs: RadarJobInput[] }) {
                 r={active?.id === dot.id ? 2.4 : 1.7}
                 className={
                   dot.lifecycle === "closing_soon"
-                    ? "fill-[var(--warn)]"
+                    ? "jr-dot-ping fill-[var(--warn)]"
                     : dot.lifecycle === "expired"
                       ? "fill-[var(--danger)]"
-                      : "fill-accent"
+                      : "jr-dot-ping fill-accent"
                 }
                 onMouseEnter={() => setActive(dot)}
                 onMouseLeave={() => setActive(null)}

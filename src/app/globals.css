@@ -110,11 +110,6 @@ body:has([data-landing]) .site-main {
 .landing-hero {
   min-height: calc(100svh - 4.25rem);
   background:
-    repeating-radial-gradient(
-      circle at 78% 38%,
-      transparent 0 44px,
-      color-mix(in srgb, var(--accent) 12%, transparent) 44px 45px
-    ),
     radial-gradient(900px 520px at 82% 8%, var(--glow), transparent 58%),
     radial-gradient(640px 360px at 8% 92%, color-mix(in srgb, var(--accent-2) 18%, transparent), transparent 62%);
 }
@@ -145,6 +140,139 @@ body:has([data-landing]) .site-main {
   animation: radar-pulse 3.6s ease-out infinite;
 }
 
+.jr-sweep-g {
+  transform-origin: 50px 50px;
+  animation: jr-spin 5.5s linear infinite;
+}
+
+.jr-breathe-g {
+  transform-origin: 50px 50px;
+  animation: jr-breathe 3.6s ease-in-out infinite;
+}
+
+.jr-wave {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: jr-wave 4.2s linear infinite;
+}
+
+.jr-core {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: jr-core 1.6s ease-in-out infinite;
+}
+
+.jr-float {
+  animation: jr-float 5.5s ease-in-out infinite;
+}
+
+.jr-live-dot {
+  display: inline-block;
+  height: 0.5rem;
+  width: 0.5rem;
+  border-radius: 999px;
+  background: var(--good);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--good) 55%, transparent);
+  animation: jr-live 1.6s ease-out infinite;
+}
+
+.jr-marquee-mask {
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
+.jr-marquee {
+  display: flex;
+  width: max-content;
+  gap: 0.5rem;
+  animation: jr-marquee 28s linear infinite;
+}
+
+.jr-dot-ping {
+  animation: jr-dot-ping 2.4s ease-out infinite;
+}
+
+@keyframes jr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes jr-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes jr-wave {
+  0% {
+    transform: scale(0.2);
+    opacity: 0.9;
+  }
+  75% {
+    transform: scale(5.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(5.6);
+    opacity: 0;
+  }
+}
+
+@keyframes jr-core {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.55);
+    opacity: 0.65;
+  }
+}
+
+@keyframes jr-float {
+  0%,
+  100% {
+    transform: translate(-50%, -50%);
+  }
+  50% {
+    transform: translate(-50%, calc(-50% - 10px));
+  }
+}
+
+@keyframes jr-live {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--good) 55%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 10px transparent;
+  }
+}
+
+@keyframes jr-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes jr-dot-ping {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
 @keyframes radar-pulse {
   0% {
     opacity: 0.35;
@@ -163,7 +291,15 @@ body:has([data-landing]) .site-main {
 @media (prefers-reduced-motion: reduce) {
   .radar-pulse,
   .panel,
-  .panel-hover {
+  .panel-hover,
+  .jr-sweep-g,
+  .jr-breathe-g,
+  .jr-wave,
+  .jr-core,
+  .jr-float,
+  .jr-live-dot,
+  .jr-marquee,
+  .jr-dot-ping {
     animation: none;
     transition: none;
   }
