@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { parseIntentHeuristic } from "@/lib/intent";
+import { rejectIfRateLimited } from "@/lib/rate-limit";
 import { collectPublicOpportunitiesForIntent, PUBLIC_BOARD_LABELS } from "@/server/collect";
 import { persistSearch, rankJobsForUser } from "@/server/rank";
 import { resolveIntent } from "@/server/search";
@@ -8,6 +9,8 @@ import { resolveIntent } from "@/server/search";
 export const maxDuration = 30;
 
 export async function POST(request: Request) {
+  const limited = rejectIfRateLimited(request, "search", 20);
+  if (limited) return limited;
   const body = (await request.json().catch(() => null)) as { query?: string } | null;
   const query = body?.query?.trim();
   if (!query) {

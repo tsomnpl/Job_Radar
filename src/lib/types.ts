@@ -50,12 +50,26 @@ export type MatchReason = {
   polarity: "positive" | "neutral" | "negative";
 };
 
+export type EligibilityLabel =
+  | "Strong match"
+  | "Potential match"
+  | "Requirements unclear"
+  | "Likely not eligible";
+
+export type EligibilityAssessment = {
+  label: EligibilityLabel;
+  why: string;
+};
+
 export type MatchExplanation = {
   score: number;
   reasons: MatchReason[];
   matchedSkills: string[];
   gaps: string[];
   highlights: string[];
+  eligibility: EligibilityAssessment;
+  educationScore: number | null;
+  requirementsScore: number | null;
 };
 
 export type ParsedCv = {

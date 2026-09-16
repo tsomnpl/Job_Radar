@@ -32,6 +32,18 @@ export function OpportunityCopilot({ jobId, signedIn }: { jobId: string; signedI
     const data = (await response.json()) as { answer?: string; source?: string; error?: string };
     setPending(false);
     if (!response.ok) {
+      if (response.status === 401) {
+        setError("Sign in or create your JobRadar account to continue.");
+        return;
+      }
+      if (response.status === 404) {
+        setError("No matching opportunities found.");
+        return;
+      }
+      if (response.status === 429) {
+        setError("Too many Copilot requests. Try again in a minute.");
+        return;
+      }
       setError("Something went wrong while searching for opportunities.");
       return;
     }

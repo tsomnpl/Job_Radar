@@ -1,6 +1,7 @@
 import { isRodiumConfigured } from "@/lib/env";
 import { displayField } from "@/lib/jobs";
 import type { JobRecord, MatchExplanation } from "@/lib/types";
+import { rodiumCopilotSchema } from "@/server/ai-schema";
 import { rodiumChatJson } from "@/server/rodium";
 
 const UNAVAILABLE = "Information not available.";
@@ -84,8 +85,7 @@ JSON : {"answer": string}`,
       },
     }),
   });
-  const payload = result?.json as { answer?: string } | null;
-  const answer = payload?.answer?.trim();
-  if (answer) return { answer, source: "rodium" };
+  const payload = rodiumCopilotSchema.safeParse(result?.json);
+  if (payload.success) return { answer: payload.data.answer, source: "rodium" };
   return { answer: fallback, source: "deterministic" };
 }

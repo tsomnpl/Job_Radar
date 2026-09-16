@@ -19,7 +19,7 @@ export function OpportunityRadar({ jobs }: { jobs: RadarJobInput[] }) {
     return (
       <section className="panel p-6">
         <p className="text-xs uppercase tracking-[0.18em] text-accent">Opportunity Radar</p>
-        <p className="mt-3 font-semibold">No matching opportunities found.</p>
+        <p className="mt-3 font-semibold">No opportunities detected.</p>
         <p className="mt-2 text-sm text-muted">
           Aucune opportunité réelle n&apos;est actuellement détectée. JobRadar n&apos;affiche pas de points fictifs.
         </p>

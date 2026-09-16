@@ -21,6 +21,7 @@ async function loadCandidate(intent: SearchIntent, userId?: string | null): Prom
           yearsExperience: row.yearsExperience,
           remotePreference: (row.remotePreference as CandidateSnapshot["remotePreference"]) ?? null,
           headline: row.headline,
+          education: row.education,
         };
       }
     } catch (error) {

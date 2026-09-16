@@ -26,7 +26,7 @@ export function AdminRadarForms() {
       return;
     }
     setExtracted(JSON.stringify({ jobs: [data.job] }, null, 2));
-    setStatus("Offre structurée. Importez-la ci-dessous ou via JSON.");
+    setStatus("Offre structurée. Relisez le JSON, importez-la en pending, puis publiez depuis Opportunities.");
   }
 
   async function publishExtracted() {
@@ -43,7 +43,7 @@ export function AdminRadarForms() {
       setStatus(`Import KO : ${data.error ?? "erreur"}`);
       return;
     }
-    setStatus(`Offre publiée — +${data.createdCount} / ~${data.updatedCount}.`);
+    setStatus(`Import pending — +${data.createdCount} / ~${data.updatedCount}. Publiez ensuite depuis Opportunities.`);
     router.refresh();
   }
 
@@ -62,7 +62,7 @@ export function AdminRadarForms() {
           disabled={pending || raw.trim().length < 40}
           className="btn-primary rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-60"
         >
-          {pending ? "Extraction..." : "Extraire avec l'IA"}
+          {pending ? "Extraction..." : "Analyze with AI"}
         </button>
       </form>
       {extracted ? (
@@ -79,7 +79,7 @@ export function AdminRadarForms() {
             disabled={pending}
             className="rounded-xl border border-line px-4 py-2 text-sm font-semibold hover:border-accent disabled:opacity-60"
           >
-            Publier cette offre
+            Importer en pending (review admin)
           </button>
         </>
       ) : null}

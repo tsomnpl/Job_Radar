@@ -115,13 +115,32 @@ export function parseSeniority(value: string | null | undefined): Seniority | nu
     : null;
 }
 
+export function canonicalSourceUrl(url: string | null | undefined): string | null {
+  const raw = url?.trim();
+  if (!raw) return null;
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    parsed.hash = "";
+    for (const key of [...parsed.searchParams.keys()]) {
+      if (/^(utm_|fbclid|gclid|mc_|ref$)/i.test(key)) parsed.searchParams.delete(key);
+    }
+    parsed.hostname = parsed.hostname.replace(/^www\./, "").toLowerCase();
+    parsed.pathname = parsed.pathname.replace(/\/+$/, "") || "/";
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
 export function fingerprintJob(input: {
   title: string;
   company: string;
   location: string;
   sourceUrl?: string | null;
 }): string {
-  if (input.sourceUrl?.trim()) return fold(input.sourceUrl);
+  const canonical = canonicalSourceUrl(input.sourceUrl);
+  if (canonical) return fold(canonical);
   return [input.title, input.company, input.location].map(fold).join("|");
 }
 

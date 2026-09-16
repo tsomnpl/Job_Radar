@@ -12,6 +12,12 @@ import { withTimeout } from "@/lib/timeout";
 import { Suspense } from "react";
 import { PageSkeleton } from "@/components/page-shell";
 import type { SearchFilters } from "@/lib/types";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Search",
+  description: "Search real JobRadar opportunities in natural language.",
+};
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -73,7 +79,7 @@ async function SearchResults({ query, filters }: { query: string; filters: Searc
           <h2 className="text-xl font-semibold">Verified opportunities</h2>
           <div className="grid gap-4">
             {ranked.map((job) => (
-              <JobCard key={job.id} job={job} />
+              <JobCard key={job.id} job={job} query={query} />
             ))}
           </div>
         </section>

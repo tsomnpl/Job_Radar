@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { Pill } from "@/components/brand";
 import { ApplyOfficialButton } from "@/components/apply-official-button";
 import { CompanyLogo } from "@/components/company-logo";
@@ -25,18 +26,37 @@ import {
 } from "@/lib/jobs";
 import { prisma } from "@/lib/prisma";
 import { matchOneJob } from "@/server/rank";
+import { getJobById } from "@/server/jobs-store";
 import { explainNarrative } from "@/server/narrative";
 
 export const dynamic = "force-dynamic";
 
-export default async function JobDetailPage({
+export async function generateMetadata({
   params,
 }: {
   params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const job = await getJobById(id);
+  if (!job) return { title: "Opportunity" };
+  return {
+    title: `${displayField(job.title)} · ${displayField(job.company)}`,
+    description: `${displayField(job.location)} · ${displayField(job.source)}`,
+  };
+}
+
+export default async function JobDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
+  const queryParams = await searchParams;
+  const fromQuery = (Array.isArray(queryParams.q) ? queryParams.q[0] : queryParams.q)?.trim() ?? "";
   const user = await getSessionUser();
-  const matched = await matchOneJob({ jobId: id, userId: user?.id });
+  const matched = await matchOneJob({ jobId: id, userId: user?.id, query: fromQuery || undefined });
   if (!matched) notFound();
   const { job, match } = matched;
   const narrative = await explainNarrative(job, match);

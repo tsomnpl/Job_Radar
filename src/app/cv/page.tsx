@@ -1,4 +1,5 @@
 import { cache, Suspense } from "react";
+import type { Metadata } from "next";
 import { Pill } from "@/components/brand";
 import { CvForm } from "@/components/cv-form";
 import { CvOptimizeButton } from "@/components/cv-optimize-button";
@@ -9,6 +10,11 @@ import { asJsonArray } from "@/lib/normalize";
 import { prisma } from "@/lib/prisma";
 import { requirePageUser } from "@/lib/page-guard";
 import { withTimeout } from "@/lib/timeout";
+
+export const metadata: Metadata = {
+  title: "CV",
+  description: "Paste or upload a CV. JobRadar stores only what you submit.",
+};
 
 export const dynamic = "force-dynamic";
 

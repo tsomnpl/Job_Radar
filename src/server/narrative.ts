@@ -1,5 +1,6 @@
 import { narrativeFromMatch } from "@/lib/matching";
 import type { JobRecord, MatchExplanation } from "@/lib/types";
+import { rodiumNarrativeSchema } from "@/server/ai-schema";
 import { rodiumChatJson } from "@/server/rodium";
 
 export async function explainNarrative(job: JobRecord, match: MatchExplanation): Promise<string> {
@@ -17,8 +18,8 @@ export async function explainNarrative(job: JobRecord, match: MatchExplanation):
         gaps: match.gaps,
       }),
     });
-    const payload = result?.json as { narrative?: string } | null;
-    if (payload?.narrative?.trim()) return payload.narrative.trim();
+    const payload = rodiumNarrativeSchema.safeParse(result?.json);
+    if (payload.success) return payload.data.narrative;
     return fallback;
   } catch {
     return fallback;

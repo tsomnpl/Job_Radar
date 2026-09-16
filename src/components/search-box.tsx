@@ -42,7 +42,7 @@ export function SearchBox({
           disabled={pending}
           className="btn-primary w-full shrink-0 rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-60 sm:w-auto"
         >
-          {pending ? "Analyzing your request..." : "Search Opportunities"}
+          {pending ? "Analyzing your request..." : size === "lg" ? "Find my opportunities" : "Search Opportunities"}
         </button>
       </div>
     </form>

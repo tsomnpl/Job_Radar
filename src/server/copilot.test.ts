@@ -51,6 +51,12 @@ const match: MatchExplanation = {
   matchedSkills: ["cybersecurity"],
   gaps: ["docker"],
   highlights: [],
+  eligibility: {
+    label: "Potential match",
+    why: "Correspondance partielle.",
+  },
+  educationScore: null,
+  requirementsScore: null,
 };
 
 describe("copilot fallback", () => {

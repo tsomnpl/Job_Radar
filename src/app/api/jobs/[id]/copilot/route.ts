@@ -3,11 +3,14 @@ import { isPersistedUser, requireUser } from "@/lib/auth";
 import { asJsonArray } from "@/lib/normalize";
 import { withDb } from "@/lib/db";
 import { prisma } from "@/lib/prisma";
+import { rejectIfRateLimited } from "@/lib/rate-limit";
 import { answerOpportunityCopilot } from "@/server/copilot";
 import { matchOneJob } from "@/server/rank";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
+    const limited = rejectIfRateLimited(request, "copilot", 15);
+    if (limited) return limited;
     const user = await requireUser();
     const { id } = await context.params;
     const body = (await request.json().catch(() => null)) as { question?: string } | null;

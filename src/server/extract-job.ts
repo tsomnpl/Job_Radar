@@ -1,4 +1,5 @@
 import { parseContractType, parseRemoteType, parseSeniority, parseSkillList } from "@/lib/normalize";
+import { rodiumExtractSchema } from "@/server/ai-schema";
 import type { JobInput } from "@/lib/types";
 import { rodiumChatJson } from "@/server/rodium";
 
@@ -7,7 +8,7 @@ JSON strict :
 {
   "title": string,
   "company": string,
-  "location": string,
+  "location": string | null,
   "country": string | null,
   "remoteType": "remote" | "hybrid" | "onsite" | null,
   "contractType": "cdi" | "cdd" | "freelance" | "internship" | "apprenticeship" | "other" | null,
@@ -15,9 +16,15 @@ JSON strict :
   "skills": string[],
   "languages": string[],
   "description": string,
-  "sourceUrl": string | null
+  "requirements": string | null,
+  "education": string | null,
+  "experience": string | null,
+  "duration": string | null,
+  "sourceUrl": string | null,
+  "applicationUrl": string | null,
+  "deadline": string | null
 }
-Ne fabrique pas d'entreprise absente du texte. Si un champ est inconnu, null ou [].`;
+Ne fabrique pas d'entreprise, URL ou deadline absente du texte. Si un champ est inconnu, null ou [].`;
 
 function heuristicExtract(raw: string): JobInput {
   const lines = raw.split(/\n+/).map((line) => line.trim()).filter(Boolean);
@@ -42,20 +49,27 @@ export async function extractJobFromText(raw: string): Promise<JobInput> {
       system: SYSTEM,
       user: raw.slice(0, 12000),
     });
-    const json = result?.json as Partial<JobInput> | null;
-    if (!json || typeof json.title !== "string" || typeof json.company !== "string") return fallback;
+    const parsed = rodiumExtractSchema.safeParse(result?.json);
+    if (!parsed.success) return fallback;
+    const json = parsed.data;
     return {
       title: json.title,
       company: json.company,
-      location: typeof json.location === "string" ? json.location : fallback.location,
+      location: json.location?.trim() || fallback.location,
       country: json.country ?? null,
       remoteType: json.remoteType ?? fallback.remoteType,
       contractType: json.contractType ?? fallback.contractType,
       seniority: json.seniority ?? fallback.seniority,
-      skills: Array.isArray(json.skills) ? json.skills : fallback.skills,
-      languages: Array.isArray(json.languages) ? json.languages : ["fr"],
-      description: typeof json.description === "string" ? json.description : fallback.description,
-      sourceUrl: typeof json.sourceUrl === "string" ? json.sourceUrl : null,
+      skills: json.skills.length ? json.skills : fallback.skills,
+      languages: json.languages.length ? json.languages : ["fr"],
+      description: json.description?.trim() || fallback.description,
+      requirements: json.requirements ?? null,
+      education: json.education ?? null,
+      experience: json.experience ?? null,
+      duration: json.duration ?? null,
+      sourceUrl: json.sourceUrl ?? null,
+      applicationUrl: json.applicationUrl ?? null,
+      deadline: json.deadline ?? null,
       source: "extract",
     };
   } catch {

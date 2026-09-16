@@ -29,5 +29,10 @@ describe("job import", () => {
       sourceUrl: "https://example.com/job-1",
     });
     expect(withUrl.fingerprint).toBe(again.fingerprint);
+    const tracked = normalizeJobInput({
+      ...jobs[0],
+      sourceUrl: "https://www.example.com/job-1?utm_source=board",
+    });
+    expect(tracked.fingerprint).toBe(withUrl.fingerprint);
   });
 });

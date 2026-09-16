@@ -36,7 +36,7 @@ export function CompanyLogo({
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={url}
-      alt=""
+        alt={`${name} logo`}
       width={size}
       height={size}
       className="shrink-0 rounded-xl border border-line object-cover bg-elev"

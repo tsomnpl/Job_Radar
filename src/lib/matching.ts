@@ -4,6 +4,7 @@ import { isUnrestrictedRemoteLocation, placesCompatible } from "./places";
 import { tokenMatchesJob } from "./synonyms";
 import type {
   CandidateSnapshot,
+  EligibilityAssessment,
   JobRecord,
   MatchExplanation,
   MatchReason,
@@ -181,6 +182,57 @@ function recencyScore(postedAt: Date, now = new Date()): number {
   return 24;
 }
 
+function overlapScore(left: string | null | undefined, right: string | null | undefined): number | null {
+  const a = left?.trim();
+  const b = right?.trim();
+  if (!a || !b) return null;
+  const rightTokens = unique(tokenize(b).filter((token) => token.length > 2));
+  if (!rightTokens.length) return null;
+  const haystack = fold(a);
+  const hits = rightTokens.filter((token) => haystack.includes(token));
+  return clamp((hits.length / rightTokens.length) * 100);
+}
+
+function requirementsScoreFor(candidate: CandidateSnapshot, job: JobRecord): number | null {
+  const requirements = job.requirements?.trim();
+  if (!requirements) return null;
+  const profileText = [candidate.headline, ...candidate.skills, candidate.education ?? ""].join(" ");
+  if (!profileText.trim()) return 0;
+  return overlapScore(profileText, requirements) ?? 0;
+}
+
+export function assessEligibility(
+  job: Pick<JobRecord, "requirements" | "education" | "experience">,
+  score: number,
+  gaps: string[],
+): EligibilityAssessment {
+  const specsMissing = !job.requirements?.trim() && !job.education?.trim() && !job.experience?.trim();
+  if (score < 45) {
+    return {
+      label: "Likely not eligible",
+      why: "Le score algorithmique est faible par rapport aux champs connus de l'offre et du profil. Ce n'est pas une décision d'employeur.",
+    };
+  }
+  if (specsMissing) {
+    return {
+      label: "Requirements unclear",
+      why: "Education, experience et requirements de l'offre sont Not specified. JobRadar ne conclut pas l'éligibilité.",
+    };
+  }
+  if (score >= 75 && gaps.length <= 3) {
+    return {
+      label: "Strong match",
+      why: "Les champs renseignés recoupent fortement le profil. JobRadar ne promet pas que vous obtiendrez le poste.",
+    };
+  }
+  return {
+    label: "Potential match",
+    why: gaps.length
+      ? `Correspondance partielle. Écarts listés depuis l'offre : ${gaps.slice(0, 4).join(", ")}.`
+      : "Correspondance partielle sur les champs disponibles. Vérifiez le lien officiel.",
+  };
+}
+
 export function buildCandidate(intent: SearchIntent, profile?: Partial<CandidateSnapshot> | null): CandidateSnapshot {
   return {
     skills: unique([...(profile?.skills ?? []), ...intent.skills].map(normalizeSkill)),
@@ -188,6 +240,7 @@ export function buildCandidate(intent: SearchIntent, profile?: Partial<Candidate
     locations: unique(
       [intent.location, intent.country, ...(profile?.locations ?? [])].filter((item): item is string => Boolean(item)),
     ),
+    education: profile?.education ?? null,
     seniority: intent.seniority ?? profile?.seniority ?? null,
     yearsExperience: profile?.yearsExperience ?? null,
     remotePreference: intent.remoteType ?? profile?.remotePreference ?? null,
@@ -268,6 +321,8 @@ export function explainMatch(job: JobRecord, candidate: CandidateSnapshot, now =
 
   const score = clamp(reasons.reduce((sum, reason) => sum + reason.score * reason.weight, 0));
   const highlights = reasons.filter((reason) => reason.polarity === "positive").map((reason) => reason.detail);
+  const educationScore = overlapScore(candidate.education, job.education);
+  const requirementsScore = requirementsScoreFor(candidate, job);
 
   return {
     score,
@@ -275,6 +330,9 @@ export function explainMatch(job: JobRecord, candidate: CandidateSnapshot, now =
     matchedSkills: skills.matched,
     gaps: skills.missing,
     highlights,
+    eligibility: assessEligibility(job, score, skills.missing),
+    educationScore,
+    requirementsScore,
   };
 }
 

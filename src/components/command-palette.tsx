@@ -10,16 +10,22 @@ export function CommandPalette({ signedIn }: { signedIn: boolean }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [jobs, setJobs] = useState<Hit[]>([]);
+  const [active, setActive] = useState(0);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
-        setOpen((value) => !value);
+        setOpen((value) => {
+          const next = !value;
+          if (next) setActive(0);
+          return next;
+        });
       }
       if (event.key === "Escape") setOpen(false);
     }
     function onOpen() {
+      setActive(0);
       setOpen(true);
     }
     window.addEventListener("keydown", onKey);
@@ -58,6 +64,8 @@ export function CommandPalette({ signedIn }: { signedIn: boolean }) {
       { href: "/", title: "Home", subtitle: "Landing" },
       { href: "/search", title: "Search", subtitle: "Natural language search" },
       { href: "/jobs", title: "Jobs", subtitle: "Published opportunities" },
+      { href: "/privacy", title: "Privacy", subtitle: "Data JobRadar stores" },
+      { href: "/terms", title: "Terms", subtitle: "How JobRadar works" },
     ];
     if (signedIn) {
       items.push(
@@ -72,10 +80,20 @@ export function CommandPalette({ signedIn }: { signedIn: boolean }) {
   }, [signedIn]);
 
   const needle = query.trim().toLowerCase();
-  const filtered = [...pages, ...jobs].filter((item) => {
-    if (!needle) return true;
-    return `${item.title} ${item.subtitle}`.toLowerCase().includes(needle);
-  });
+  const filtered = [...pages, ...jobs]
+    .filter((item) => {
+      if (!needle) return true;
+      return `${item.title} ${item.subtitle}`.toLowerCase().includes(needle);
+    })
+    .slice(0, 20);
+  const selected = Math.min(active, Math.max(filtered.length - 1, 0));
+
+  function go(href: string) {
+    setOpen(false);
+    setQuery("");
+    setActive(0);
+    router.push(href);
+  }
 
   if (!open) return null;
 
@@ -85,22 +103,38 @@ export function CommandPalette({ signedIn }: { signedIn: boolean }) {
         <input
           autoFocus
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setActive(0);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowDown") {
+              event.preventDefault();
+              setActive((value) => Math.min(value + 1, Math.max(filtered.length - 1, 0)));
+            }
+            if (event.key === "ArrowUp") {
+              event.preventDefault();
+              setActive((value) => Math.max(value - 1, 0));
+            }
+            if (event.key === "Enter" && filtered[selected]) {
+              event.preventDefault();
+              go(filtered[selected].href);
+            }
+          }}
           placeholder="Search opportunities, pages, CV…"
           className="field w-full rounded-xl px-3 py-3 text-sm"
+          aria-autocomplete="list"
+          aria-controls="jobradar-command-results"
         />
-        <ul className="mt-2 max-h-80 overflow-auto">
+        <ul id="jobradar-command-results" className="mt-2 max-h-80 overflow-auto" role="listbox">
           {filtered.length ? (
-            filtered.slice(0, 20).map((item) => (
-              <li key={item.href + item.title}>
+            filtered.map((item, index) => (
+              <li key={item.href + item.title} role="option" aria-selected={index === selected}>
                 <button
                   type="button"
-                  className="w-full rounded-xl px-3 py-2 text-left hover:bg-elev"
-                  onClick={() => {
-                    setOpen(false);
-                    setQuery("");
-                    router.push(item.href);
-                  }}
+                  className={`w-full rounded-xl px-3 py-2 text-left ${index === selected ? "bg-elev" : "hover:bg-elev"}`}
+                  onClick={() => go(item.href)}
+                  onMouseEnter={() => setActive(index)}
                 >
                   <p className="text-sm font-medium">{item.title}</p>
                   <p className="text-xs text-muted">{item.subtitle}</p>
@@ -111,7 +145,7 @@ export function CommandPalette({ signedIn }: { signedIn: boolean }) {
             <li className="px-3 py-4 text-sm text-muted">No matching opportunities found.</li>
           )}
         </ul>
-        <p className="px-3 py-2 text-xs text-muted">Esc to close · Ctrl/Cmd + K</p>
+        <p className="px-3 py-2 text-xs text-muted">↑↓ to move · Enter to open · Esc to close</p>
       </div>
     </div>
   );

@@ -2,11 +2,14 @@ import { NextResponse } from "next/server";
 import { isPersistedUser, requireUser } from "@/lib/auth";
 import { logDbError } from "@/lib/db";
 import { prisma } from "@/lib/prisma";
+import { rejectIfRateLimited } from "@/lib/rate-limit";
 import { parseCv } from "@/server/cv";
 import { extractResumeText, isAllowedResumeFile } from "@/server/document-text";
 
 export async function POST(request: Request) {
   try {
+    const limited = rejectIfRateLimited(request, "cv-upload", 8);
+    if (limited) return limited;
     const user = await requireUser();
     const form = await request.formData();
     const file = form.get("file");

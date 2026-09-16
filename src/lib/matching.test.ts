@@ -169,4 +169,24 @@ describe("explainMatch", () => {
     expect(jobFitsSearchIntent(pharmacy, intent)).toBe(false);
     expect(jobFitsSearchIntent(pharmacy, parseIntentHeuristic("stage cybersécurité Togo"))).toBe(false);
   });
+
+  it("labels eligibility without promising a hire", () => {
+    const intent = parseIntentHeuristic("stage data remote Cotonou");
+    const candidate = buildCandidate(intent, {
+      skills: ["sql", "excel", "python", "data"],
+      languages: ["fr"],
+      locations: ["Cotonou"],
+      seniority: "intern",
+      yearsExperience: 1,
+      remotePreference: "remote",
+      headline: "Étudiant data",
+      education: "Licence informatique",
+      query: intent.query,
+    });
+    const match = explainMatch(baseJob, candidate);
+    expect(match.eligibility.label).toBe("Requirements unclear");
+    expect(match.eligibility.why.toLowerCase()).not.toContain("definitely");
+    expect(match.educationScore).toBeNull();
+    expect(match.requirementsScore).toBeNull();
+  });
 });

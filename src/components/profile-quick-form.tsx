@@ -73,13 +73,13 @@ export function ProfileQuickForm({
       <input
         value={headline}
         onChange={(event) => setHeadline(event.target.value)}
-        placeholder="Headline — ex. Data analyst junior, Cotonou"
+        placeholder="Domaines / headline — ex. Cybersecurity intern, Cotonou"
         className="field w-full rounded-xl px-3 py-2 text-sm outline-none"
       />
       <input
         value={skills}
         onChange={(event) => setSkills(event.target.value)}
-        placeholder="Compétences — sql, python, excel"
+        placeholder="Compétences / mots-clés — sql, python, excel"
         className="field w-full rounded-xl px-3 py-2 text-sm outline-none"
       />
       <input

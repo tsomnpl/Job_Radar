@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { Pill, ScoreRing } from "@/components/brand";
 import { RadarJobList } from "@/components/radar-job-list";
 import { PageSkeleton } from "@/components/page-shell";
@@ -16,6 +17,11 @@ import { jobLifecycle } from "@/lib/job-lifecycle";
 import { rankJobsForUser } from "@/server/rank";
 import { listStockJobs } from "@/server/jobs-store";
 import { withTimeout } from "@/lib/timeout";
+
+export const metadata: Metadata = {
+  title: "Dashboard",
+  description: "Career Command Center — My Radar, saved jobs, and applications.",
+};
 
 export const dynamic = "force-dynamic";
 
@@ -226,7 +232,7 @@ async function DashboardData() {
         <div className="flex items-center justify-between">
           <h2 className="font-semibold">Recommended opportunities</h2>
           <Link href="/search" className="text-sm text-accent">
-            Rechercher
+            Explore opportunities
           </Link>
         </div>
         {ranked[0] ? (

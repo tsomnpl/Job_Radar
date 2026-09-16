@@ -6,10 +6,11 @@ import { OpportunityDna } from "@/components/opportunity-dna";
 import { formatContract, formatRemote, formatSeniority } from "@/lib/jobs";
 import type { RankedJob } from "@/lib/types";
 
-export function JobCard({ job }: { job: RankedJob }) {
+export function JobCard({ job, query }: { job: RankedJob; query?: string }) {
   const topReason = job.match.reasons.find((reason) => reason.polarity === "positive") ?? job.match.reasons[0];
+  const href = query?.trim() ? `/jobs/${job.id}?q=${encodeURIComponent(query.trim())}` : `/jobs/${job.id}`;
   return (
-    <Link href={`/jobs/${job.id}`} className="panel panel-hover block p-5">
+    <Link href={href} className="panel panel-hover block p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-start gap-3">
           <CompanyLogo name={job.company} src={job.companyLogo} />
