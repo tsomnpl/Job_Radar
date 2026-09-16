@@ -189,4 +189,33 @@ describe("explainMatch", () => {
     expect(match.educationScore).toBeNull();
     expect(match.requirementsScore).toBeNull();
   });
+
+  it("keeps list and detail scores aligned when the same query is parsed", () => {
+    const query = "internship cybersecurity remote";
+    const job: JobRecord = {
+      ...baseJob,
+      title: "Blockchain Security Expert Intern - AI Track",
+      company: "CertiK",
+      location: "USA",
+      country: "US",
+      skills: ["cybersecurity"],
+      description: "Remote internship in cybersecurity.",
+    };
+    const rawIntent = {
+      query,
+      keywords: [] as string[],
+      skills: [] as string[],
+      location: null,
+      country: null,
+      remoteType: null,
+      contractType: null,
+      seniority: null,
+      language: null,
+      source: "heuristic" as const,
+    };
+    const rawScore = explainMatch(job, buildCandidate(rawIntent)).score;
+    const parsedScore = explainMatch(job, buildCandidate(parseIntentHeuristic(query))).score;
+    expect(parsedScore).toBeGreaterThanOrEqual(rawScore);
+    expect(parsedScore).toBeGreaterThanOrEqual(70);
+  });
 });

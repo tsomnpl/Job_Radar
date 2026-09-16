@@ -1,4 +1,5 @@
 import { buildCandidate, explainMatch, jobFitsSearchIntent, narrativeFromMatch, selectVerifiedMatches, MIN_MATCH_SCORE } from "@/lib/matching";
+import { parseIntentHeuristic } from "@/lib/intent";
 import { asJsonArray } from "@/lib/normalize";
 import { logDbError } from "@/lib/db";
 import { prisma } from "@/lib/prisma";
@@ -104,18 +105,7 @@ export async function persistSearch(params: {
 export async function matchOneJob(params: { jobId: string; userId?: string | null; query?: string }) {
   const job = await getJobById(params.jobId);
   if (!job || !isVerifiedOpportunity(job)) return null;
-  const intent = {
-    query: params.query ?? "",
-    keywords: [] as string[],
-    skills: [] as string[],
-    location: null,
-    country: null,
-    remoteType: null,
-    contractType: null,
-    seniority: null,
-    language: null,
-    source: "heuristic" as const,
-  };
+  const intent = parseIntentHeuristic(params.query ?? "");
   const candidate = await loadCandidate(intent, params.userId);
   const match = explainMatch(job, candidate);
   return { job, match, candidate };

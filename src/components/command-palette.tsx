@@ -4,12 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Hit = { href: string; title: string; subtitle: string };
+type CatalogJob = { id: string; title: string; company: string };
 
 export function CommandPalette({ signedIn }: { signedIn: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [jobs, setJobs] = useState<Hit[]>([]);
+  const [jobs, setJobs] = useState<CatalogJob[]>([]);
   const [active, setActive] = useState(0);
 
   useEffect(() => {
@@ -42,14 +43,8 @@ export function CommandPalette({ signedIn }: { signedIn: boolean }) {
     const timer = window.setTimeout(() => {
       fetch("/api/jobs", { signal: controller.signal })
         .then((response) => response.json())
-        .then((data: { jobs?: Array<{ id: string; title: string; company: string }> }) => {
-          setJobs(
-            (data.jobs ?? []).map((job) => ({
-              href: `/jobs/${job.id}`,
-              title: job.title,
-              subtitle: job.company,
-            })),
-          );
+        .then((data: { jobs?: CatalogJob[] }) => {
+          setJobs(data.jobs ?? []);
         })
         .catch(() => setJobs([]));
     }, 150);
@@ -87,7 +82,12 @@ export function CommandPalette({ signedIn }: { signedIn: boolean }) {
         subtitle: "Natural language search",
       }
     : null;
-  const filtered = [...(searchHit ? [searchHit] : []), ...pages, ...jobs]
+  const jobHits: Hit[] = jobs.map((job) => ({
+    href: needle ? `/jobs/${job.id}?q=${encodeURIComponent(query.trim())}` : `/jobs/${job.id}`,
+    title: job.title,
+    subtitle: job.company,
+  }));
+  const filtered = [...(searchHit ? [searchHit] : []), ...pages, ...jobHits]
     .filter((item) => {
       if (!needle) return true;
       if (item === searchHit) return true;
