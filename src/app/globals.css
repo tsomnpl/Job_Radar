@@ -119,6 +119,12 @@ body:has([data-landing]) .site-main {
     radial-gradient(640px 360px at 8% 92%, color-mix(in srgb, var(--accent-2) 18%, transparent), transparent 62%);
 }
 
+@media (max-width: 767px) {
+  .landing-hero {
+    min-height: 0;
+  }
+}
+
 .btn-primary {
   background: var(--accent);
   color: var(--accent-fg);

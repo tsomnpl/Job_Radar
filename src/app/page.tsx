@@ -237,7 +237,7 @@ export default function HomePage() {
         </Shell>
       </section>
 
-      <section className="py-20 md:py-28">
+      <section id="matching" className="py-20 md:py-28">
         <Shell>
           <p className="text-xs uppercase tracking-[0.22em] text-accent">Matching explicable</p>
           <h2 className="mt-3 max-w-3xl text-3xl font-semibold md:text-5xl">Le score n&apos;est pas une IA qui décide pour vous.</h2>
@@ -312,7 +312,7 @@ export default function HomePage() {
         </Shell>
       </section>
 
-      <section className="border-y border-line bg-elev/40 py-20 md:py-28">
+      <section id="faq" className="border-y border-line bg-elev/40 py-20 md:py-28">
         <Shell>
           <p className="text-xs uppercase tracking-[0.22em] text-accent">Questions fréquentes</p>
           <h2 className="mt-3 text-3xl font-semibold md:text-5xl">Sans marketing creux.</h2>
@@ -327,7 +327,7 @@ export default function HomePage() {
         </Shell>
       </section>
 
-      <section className="py-20 md:py-28">
+      <section id="scan" className="py-20 md:py-28">
         <Shell>
           <div className="panel radar-ring overflow-hidden px-6 py-14 md:px-12 md:py-16">
             <p className="text-xs uppercase tracking-[0.22em] text-accent">Prêt à scanner</p>
