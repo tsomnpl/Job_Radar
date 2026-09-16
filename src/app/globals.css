@@ -100,6 +100,25 @@ a {
     repeating-radial-gradient(circle at 82% 42%, transparent 0 18px, color-mix(in srgb, var(--accent) 10%, transparent) 18px 19px);
 }
 
+body:has([data-landing]) .site-main {
+  max-width: none;
+  width: 100%;
+  padding: 0;
+  min-height: 0;
+}
+
+.landing-hero {
+  min-height: calc(100svh - 4.25rem);
+  background:
+    repeating-radial-gradient(
+      circle at 78% 38%,
+      transparent 0 44px,
+      color-mix(in srgb, var(--accent) 12%, transparent) 44px 45px
+    ),
+    radial-gradient(900px 520px at 82% 8%, var(--glow), transparent 58%),
+    radial-gradient(640px 360px at 8% 92%, color-mix(in srgb, var(--accent-2) 18%, transparent), transparent 62%);
+}
+
 .btn-primary {
   background: var(--accent);
   color: var(--accent-fg);

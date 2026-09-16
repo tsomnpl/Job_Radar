@@ -8,7 +8,7 @@ export function SearchBox({
   size = "lg",
 }: {
   initialQuery?: string;
-  size?: "lg" | "md";
+  size?: "xl" | "lg" | "md";
 }) {
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
@@ -26,7 +26,7 @@ export function SearchBox({
     <form onSubmit={submit} className="w-full">
       <div
         className={`field flex flex-col gap-2 rounded-2xl sm:flex-row sm:items-center ${
-          size === "lg" ? "p-2" : "p-1.5"
+          size === "xl" ? "p-2.5 shadow-lg" : size === "lg" ? "p-2" : "p-1.5"
         }`}
       >
         <input
@@ -34,15 +34,17 @@ export function SearchBox({
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Je cherche un stage en cybersécurité au Togo ou à distance…"
           className={`w-full min-w-0 bg-transparent px-3 outline-none placeholder:text-muted ${
-            size === "lg" ? "h-12 text-base" : "h-10 text-sm"
+            size === "xl" ? "h-14 text-lg" : size === "lg" ? "h-12 text-base" : "h-10 text-sm"
           }`}
         />
         <button
           type="submit"
           disabled={pending}
-          className="btn-primary w-full shrink-0 rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-60 sm:w-auto"
+          className={`btn-primary w-full shrink-0 rounded-xl font-semibold disabled:opacity-60 sm:w-auto ${
+            size === "xl" ? "px-6 py-3.5 text-base" : "px-4 py-2 text-sm"
+          }`}
         >
-          {pending ? "Analyzing your request..." : size === "lg" ? "Find my opportunities" : "Search Opportunities"}
+          {pending ? "Analyzing your request..." : size === "md" ? "Search Opportunities" : "Find my opportunities"}
         </button>
       </div>
     </form>

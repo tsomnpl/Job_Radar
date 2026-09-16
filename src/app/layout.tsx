@@ -50,7 +50,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     <ThemeProvider>
       <SiteHeader clerkEnabled={clerkEnabled} signedIn={signedIn} isAdmin={user?.role === "ADMIN"} />
       <CommandPalette signedIn={signedIn} />
-      <main className="mx-auto min-h-[70vh] w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+      <main className="site-main mx-auto min-h-[70vh] w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
       <footer className="border-t border-line px-4 py-6 text-center text-xs text-muted">
         <p>JobRadar · Your next opportunity, before you miss it.</p>
         <p className="mt-2 flex justify-center gap-4">
