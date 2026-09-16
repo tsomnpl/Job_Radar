@@ -1,13 +1,16 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  appUrl,
   clerkClientProxyUrl,
   clerkKeysAligned,
   clerkPublishableKind,
   clerkSecretKind,
   isClerkProduction,
   isEmailConfigured,
+  isLocalhostOrigin,
   isVercelAppHost,
   parseEmailFrom,
+  PRODUCTION_APP_URL,
 } from "./env";
 
 const ORIGINAL = {
@@ -16,6 +19,10 @@ const ORIGINAL = {
   proxy: process.env.NEXT_PUBLIC_CLERK_PROXY_URL,
   resend: process.env.RESEND_API_KEY,
   from: process.env.EMAIL_FROM,
+  appUrl: process.env.NEXT_PUBLIC_APP_URL,
+  vercel: process.env.VERCEL,
+  vercelUrl: process.env.VERCEL_URL,
+  vercelProduction: process.env.VERCEL_PROJECT_PRODUCTION_URL,
 };
 
 afterEach(() => {
@@ -24,6 +31,10 @@ afterEach(() => {
   restore("NEXT_PUBLIC_CLERK_PROXY_URL", ORIGINAL.proxy);
   restore("RESEND_API_KEY", ORIGINAL.resend);
   restore("EMAIL_FROM", ORIGINAL.from);
+  restore("NEXT_PUBLIC_APP_URL", ORIGINAL.appUrl);
+  restore("VERCEL", ORIGINAL.vercel);
+  restore("VERCEL_URL", ORIGINAL.vercelUrl);
+  restore("VERCEL_PROJECT_PRODUCTION_URL", ORIGINAL.vercelProduction);
 });
 
 function restore(key: string, value: string | undefined) {
@@ -71,6 +82,39 @@ describe("isVercelAppHost", () => {
   it("flags vercel.app hosts that cannot be Clerk Production DNS", () => {
     expect(isVercelAppHost("https://job-radar-six-ochre.vercel.app")).toBe(true);
     expect(isVercelAppHost("https://jobradar.example")).toBe(false);
+  });
+});
+
+describe("appUrl", () => {
+  it("keeps localhost for local development", () => {
+    delete process.env.VERCEL;
+    delete process.env.VERCEL_URL;
+    delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
+    process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
+    expect(isLocalhostOrigin(appUrl())).toBe(true);
+    expect(appUrl()).toBe("http://localhost:3000");
+  });
+
+  it("ignores localhost NEXT_PUBLIC_APP_URL on Vercel", () => {
+    process.env.VERCEL = "1";
+    process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
+    delete process.env.VERCEL_URL;
+    delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
+    expect(appUrl()).toBe(PRODUCTION_APP_URL);
+    expect(isLocalhostOrigin(appUrl())).toBe(false);
+  });
+
+  it("prefers a real public NEXT_PUBLIC_APP_URL over the fallback host", () => {
+    process.env.VERCEL = "1";
+    process.env.NEXT_PUBLIC_APP_URL = "https://jobradar.example";
+    expect(appUrl()).toBe("https://jobradar.example");
+  });
+
+  it("uses VERCEL_PROJECT_PRODUCTION_URL when APP_URL is localhost", () => {
+    process.env.VERCEL = "1";
+    process.env.NEXT_PUBLIC_APP_URL = "http://127.0.0.1:3000";
+    process.env.VERCEL_PROJECT_PRODUCTION_URL = "job-radar-six-ochre.vercel.app";
+    expect(appUrl()).toBe("https://job-radar-six-ochre.vercel.app");
   });
 });
 

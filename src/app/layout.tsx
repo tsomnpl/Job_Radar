@@ -7,7 +7,7 @@ import { CommandPalette } from "@/components/command-palette";
 import { ThemeProvider } from "@/components/theme-provider";
 import { getSessionUser } from "@/lib/auth";
 import { clerkAppearance } from "@/lib/clerk-appearance";
-import { clerkClientProxyUrl, isClerkConfigured, isClerkProduction } from "@/lib/env";
+import { appUrl, clerkClientProxyUrl, isClerkConfigured, isClerkProduction } from "@/lib/env";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -21,7 +21,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000"),
+  metadataBase: new URL(appUrl()),
   title: {
     default: "JobRadar — Your next opportunity, before you miss it.",
     template: "%s — JobRadar",

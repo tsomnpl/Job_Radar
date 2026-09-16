@@ -1,6 +1,7 @@
 import "server-only";
 
 import { NextResponse } from "next/server";
+import { appUrl } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,7 @@ async function proxyClerkFrontendApi(request: Request, context: RouteContext): P
     headers.set(key, value);
   });
 
-  const app = (process.env.NEXT_PUBLIC_APP_URL?.trim() || incoming.origin).replace(/\/$/, "");
+  const app = appUrl();
   headers.set("Clerk-Proxy-Url", `${app}/__clerk`);
   headers.set("Clerk-Secret-Key", secret);
   const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
