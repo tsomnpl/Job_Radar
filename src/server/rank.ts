@@ -56,6 +56,26 @@ export async function rankJobsForUser(params: {
   return selectVerifiedMatches(ranked, params.minScore ?? MIN_MATCH_SCORE).slice(0, params.limit ?? 40);
 }
 
+/** All live stock for Offres / vitrine — no dummy search keywords, no pending gate. */
+export async function listCatalogJobs(params?: {
+  userId?: string | null;
+  limit?: number;
+}): Promise<RankedJob[]> {
+  const [jobs, candidate] = await Promise.all([
+    listSearchableJobs(),
+    loadCandidate(parseIntentHeuristic(""), params?.userId),
+  ]);
+  return jobs
+    .filter(isVerifiedOpportunity)
+    .map((record) => ({ ...record, match: explainMatch(record, candidate) }))
+    .sort((a, b) => {
+      const scoreDelta = b.match.score - a.match.score;
+      if (scoreDelta !== 0) return scoreDelta;
+      return new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime();
+    })
+    .slice(0, params?.limit ?? 50);
+}
+
 export async function persistSearch(params: {
   user?: AppUser | null;
   userId?: string | null;

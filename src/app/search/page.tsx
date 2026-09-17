@@ -37,7 +37,7 @@ export default async function SearchPage({
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-semibold">{t(lang, "search.title")}</h1>
-        <p className="text-muted">{t(lang, "empty.hint")}</p>
+        <p className="text-muted">{t(lang, "search.intro")}</p>
         <SearchBox />
         <SearchFiltersForm query="" filters={filters} />
         <section className="panel p-6 text-sm text-muted">
@@ -55,7 +55,7 @@ export default async function SearchPage({
         <SearchFiltersForm query={query} filters={filters} />
       </div>
       <Suspense fallback={<PageSkeleton title="Searching opportunities…" />}>
-        <SearchResults query={query || "opportunités"} filters={filters} />
+        <SearchResults query={query} filters={filters} />
       </Suspense>
     </div>
   );
@@ -68,7 +68,10 @@ async function SearchResults({ query, filters }: { query: string; filters: Searc
     withTimeout(resolveIntent(query), 8000, heuristic),
     collectPublicOpportunitiesForIntent(heuristic),
   ]);
-  const ranked = applySearchFilters(await rankJobsForUser({ intent }), filters);
+  const ranked = applySearchFilters(
+    await rankJobsForUser({ intent, minScore: query ? undefined : 0 }),
+    filters,
+  );
   await persistSearch({ intent, ranked });
 
   return (

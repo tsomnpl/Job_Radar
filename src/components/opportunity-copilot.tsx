@@ -20,7 +20,6 @@ export function OpportunityCopilot({
 }) {
   const [question, setQuestion] = useState(PROMPTS[0] ?? "");
   const [answer, setAnswer] = useState<string | null>(null);
-  const [source, setSource] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,7 +44,7 @@ export function OpportunityCopilot({
         return;
       }
       if (response.status === 404) {
-        setError("No matching opportunities found.");
+        setError(lang === "en" ? "Hey — coming soon." : "Hey — coming soon.");
         return;
       }
       if (response.status === 429) {
@@ -56,7 +55,6 @@ export function OpportunityCopilot({
       return;
     }
     setAnswer(data.answer ?? "Information not available.");
-    setSource(data.source ?? "deterministic");
   }
 
   return (
@@ -98,7 +96,7 @@ export function OpportunityCopilot({
         <div className="text-sm leading-6">
           <p>{answer}</p>
           <p className="mt-2 text-xs text-muted">
-            {source === "rodium" ? "Réponse RodiumAI à partir des données réelles." : "Réponse déterministe (RodiumAI non utilisé)."}
+            {lang === "en" ? "Answer based on this offer’s real data." : "Réponse basée sur les données réelles de l’offre."}
           </p>
         </div>
       ) : null}

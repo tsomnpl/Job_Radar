@@ -39,7 +39,7 @@ export function SiteHeader({
 
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-[var(--header)] backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
         <JobRadarLogo />
         <nav className="hidden flex-wrap items-center justify-center gap-5 text-sm text-muted lg:flex">
           {links.map((link) => (
@@ -52,14 +52,14 @@ export function SiteHeader({
           <LanguageSwitch lang={lang} />
           <button
             type="button"
-            className="rounded-lg border border-line px-2 py-1 text-xs text-muted"
+            className="hidden rounded-lg border border-line px-2 py-1 text-xs text-muted sm:inline-flex"
             onClick={() => window.dispatchEvent(new Event("jobradar-command"))}
             aria-label={t(lang, "nav.command")}
           >
             ⌘K
           </button>
           <ThemeToggle />
-          <span className="hidden sm:inline-flex">
+          <span className="inline-flex h-8 min-w-8 shrink-0 items-center justify-center">
             <HeaderAuth clerkEnabled={clerkEnabled} lang={lang} />
           </span>
           <button
@@ -80,6 +80,7 @@ export function SiteHeader({
               {link.label}
             </Link>
           ))}
+          <HeaderAuth clerkEnabled={clerkEnabled} lang={lang} variant="menu" />
         </nav>
       ) : null}
     </header>

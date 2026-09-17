@@ -17,8 +17,7 @@ import { OpportunityTimeline } from "@/components/opportunity-timeline";
 import { getRequestLang, t } from "@/i18n";
 import { isClerkConfigured } from "@/lib/env";
 import { jobLifecycle } from "@/lib/job-lifecycle";
-import { rankJobsForUser } from "@/server/rank";
-import { listStockJobs } from "@/server/jobs-store";
+import { listCatalogJobs, rankJobsForUser } from "@/server/rank";
 import { listSeenJobIds } from "@/server/job-views";
 import { withTimeout } from "@/lib/timeout";
 
@@ -133,19 +132,19 @@ async function DashboardData() {
       : Promise.resolve([]),
   ]);
 
-  const stock = await withTimeout(listStockJobs(), 2500, []);
+  const stock = await withTimeout(listCatalogJobs({ userId: user?.id, limit: 40 }), 2500, []);
   const radarQuery = searches[0]?.query || profile?.headline || "";
-  const ranked = stock.length
+  const ranked = radarQuery
     ? await withTimeout(
         rankJobsForUser({
-          intent: parseIntentHeuristic(radarQuery || "opportunités"),
+          intent: parseIntentHeuristic(radarQuery),
           userId: user?.id,
           limit: 6,
         }),
         2500,
-        [],
+        stock.slice(0, 6),
       )
-    : [];
+    : stock.slice(0, 6);
 
   const alerts = ranked.filter((job) => job.match.score >= 70).slice(0, 4);
   const closing = stock.filter((job) => jobLifecycle(job.deadline) === "closing_soon");
@@ -166,9 +165,7 @@ async function DashboardData() {
       {empty ? (
         <section className="panel space-y-4 p-6">
           <p className="text-sm text-muted">
-            Aucune offre vérifiée, aucun CV, aucune candidature. Remplissez votre profil, importez de vraies
-            offres en admin, ou lancez une recherche — s&apos;il n&apos;y a rien, JobRadar n&apos;inventera pas
-            d&apos;offre.
+            Hey — coming soon. Remplissez votre profil ou lancez une recherche : de nouvelles opportunités arrivent bientôt.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link href="/cv" className="btn-primary rounded-full px-4 py-2 text-sm font-semibold">

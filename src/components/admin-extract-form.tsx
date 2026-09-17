@@ -26,7 +26,7 @@ export function AdminRadarForms() {
       return;
     }
     setExtracted(JSON.stringify({ jobs: [data.job] }, null, 2));
-    setStatus("Offre structurée. Relisez le JSON, importez-la en pending, puis publiez depuis Opportunities.");
+    setStatus("Offre structurée. Relisez le JSON, puis importez — elle sera publiée tout de suite dans Offres.");
   }
 
   async function publishExtracted() {
@@ -43,7 +43,7 @@ export function AdminRadarForms() {
       setStatus(`Import KO : ${data.error ?? "erreur"}`);
       return;
     }
-    setStatus(`Import pending — +${data.createdCount} / ~${data.updatedCount}. Publiez ensuite depuis Opportunities.`);
+    setStatus(`Import publié — +${data.createdCount} / ~${data.updatedCount}. Visible dans Offres.`);
     router.refresh();
   }
 
@@ -79,7 +79,7 @@ export function AdminRadarForms() {
             disabled={pending}
             className="rounded-xl border border-line px-4 py-2 text-sm font-semibold hover:border-accent disabled:opacity-60"
           >
-            Importer en pending (review admin)
+            Importer et publier
           </button>
         </>
       ) : null}

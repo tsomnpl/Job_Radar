@@ -1,5 +1,5 @@
 import { logDbError } from "@/lib/db";
-import { isPublicBoardSource, isVerifiedOpportunity, toJobRecord } from "@/lib/jobs";
+import { isVerifiedOpportunity, toJobRecord } from "@/lib/jobs";
 import { isExcludedFromSearch, isPubliclyListed } from "@/lib/job-lifecycle";
 import { prisma } from "@/lib/prisma";
 import type { JobRecord } from "@/lib/types";
@@ -53,8 +53,8 @@ function toRecord(data: JobWriteInput): JobRecord {
     deadline: data.deadline,
     startDate: data.startDate,
     endDate: data.endDate,
-    status: data.status ?? (data.active ? "published" : "pending"),
-    active: data.active ?? false,
+    status: data.status ?? "published",
+    active: data.active ?? (data.status !== "unpublished" && data.status !== "archived"),
   });
 }
 
@@ -72,7 +72,7 @@ export async function upsertJobRecord(data: JobWriteInput): Promise<JobRecord | 
         ? "archived"
         : keepUnpublished
           ? "unpublished"
-          : (data.status ?? "pending");
+          : (data.status ?? "published");
     const active = status === "published";
     const { id, ...rest } = data;
     const payload = {
@@ -129,13 +129,13 @@ export function isStockJob(job: Pick<JobRecord, "source">): boolean {
 export async function listPublishedJobs(): Promise<JobRecord[]> {
   try {
     const jobs = await prisma.job.findMany({
-      where: { active: true, status: "published" },
+      where: { status: { in: ["published", "pending"] } },
       orderBy: { postedAt: "desc" },
     });
     return jobs.map(toJobRecord).filter((job) => isStockJob(job) && isPubliclyListed(job));
   } catch (error) {
     logDbError("listPublishedJobs", error);
-    return [...memoryJobs.values()].filter((job) => job.active !== false && isStockJob(job) && isPubliclyListed(job));
+    return [...memoryJobs.values()].filter((job) => isStockJob(job) && isPubliclyListed(job));
   }
 }
 
@@ -162,16 +162,15 @@ export async function listSearchableJobs(): Promise<JobRecord[]> {
 
 export async function getJobById(id: string): Promise<JobRecord | null> {
   const remembered = memoryJobs.get(id);
-  if (remembered && isStockJob(remembered)) return remembered;
+  if (remembered && isStockJob(remembered) && isPubliclyListed(remembered)) return remembered;
   if (remembered && !isStockJob(remembered)) return null;
   try {
     const job = await prisma.job.findUnique({ where: { id } });
     if (job) {
       const record = toJobRecord(job);
       if (!isStockJob(record)) return null;
-      if (record.status === "archived" || record.status === "unpublished") return null;
-      if (record.status === "published") return record;
-      if (record.status === "pending" && isPublicBoardSource(record.source)) return record;
+      if (!isPubliclyListed(record)) return null;
+      return record;
     }
   } catch (error) {
     logDbError("getJobById", error);
@@ -238,8 +237,8 @@ export async function persistRememberedJob(job: JobRecord): Promise<JobRecord | 
     return await upsertJobRecord({
       ...normalized,
       id: job.id,
-      status: job.status === "published" ? "published" : "pending",
-      active: job.status === "published",
+      status: job.status === "unpublished" || job.status === "archived" ? job.status : "published",
+      active: job.status !== "unpublished" && job.status !== "archived",
     });
   } catch (error) {
     logDbError("persistRememberedJob", error);

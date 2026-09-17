@@ -111,7 +111,7 @@ export default async function AdminPage({
           </div>
           <div className="panel p-6">
             <h2 className="font-semibold">Import CSV / JSON</h2>
-            <p className="mt-2 text-sm text-muted">Les imports arrivent en pending, puis vous publiez.</p>
+            <p className="mt-2 text-sm text-muted">Les imports sont publiés tout de suite dans Offres.</p>
             <div className="mt-4">
               <ImportForm />
             </div>

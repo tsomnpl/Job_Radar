@@ -425,8 +425,17 @@ body:has([data-landing]) .site-main {
   animation: jr-spin 7s linear infinite;
 }
 
-.hud-ring-pulse {
+  .hud-ring-pulse {
   animation: jr-breathe 3.8s ease-in-out infinite;
+}
+
+.cl-avatarBox,
+.cl-userButtonAvatarBox,
+.cl-userButtonTrigger {
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+  min-height: 2rem;
 }
 
 @media (prefers-reduced-motion: reduce) {

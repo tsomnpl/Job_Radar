@@ -9,9 +9,7 @@ import { OpportunityTimeline } from "@/components/opportunity-timeline";
 import { LandingRadar } from "@/components/radar-dish";
 import { formatOpportunityType } from "@/lib/jobs";
 import { isClerkConfigured } from "@/lib/env";
-import { parseIntentHeuristic } from "@/lib/intent";
-import { rankJobsForUser } from "@/server/rank";
-import { listStockJobs } from "@/server/jobs-store";
+import { listCatalogJobs } from "@/server/rank";
 import { withTimeout } from "@/lib/timeout";
 
 const EXAMPLES = [
@@ -77,7 +75,7 @@ const AUDIENCE = [
   },
   {
     title: "ONG et organisations internationales",
-    body: "Missions, consulting, ONU / import admin. L'admin publie en pending, jamais en silence.",
+    body: "Missions, consulting, ONU / import admin. Les offres trouvées sont publiées tout de suite dans Offres.",
   },
   {
     title: "Candidats qui veulent comprendre le score",
@@ -243,7 +241,7 @@ export default function HomePage() {
           <p className="text-xs uppercase tracking-[0.22em] text-accent">Matching explicable</p>
           <h2 className="mt-3 max-w-3xl text-3xl font-semibold md:text-5xl">Le score n&apos;est pas une IA qui décide pour vous.</h2>
           <p className="mt-4 max-w-2xl text-muted">
-            Pondération déterministe. RodiumAI peut expliquer le texte ; il ne fabrique pas le pourcentage.
+            Pondération déterministe. L&apos;analyse explique le match ; elle ne fabrique pas le pourcentage.
             Education et Requirements n&apos;apparaissent en % que si les textes existent.
           </p>
           <div className="mt-10 grid gap-3">
@@ -361,18 +359,8 @@ function Shell({ children, className }: { children: ReactNode; className?: strin
 }
 
 async function HomeJobPreview() {
-  const stock = await withTimeout(listStockJobs(), 2500, []);
-  const preview = stock.length
-    ? await withTimeout(
-        rankJobsForUser({
-          intent: parseIntentHeuristic("opportunités"),
-          limit: 3,
-          minScore: 0,
-        }),
-        2500,
-        [],
-      )
-    : [];
+  const catalog = await withTimeout(listCatalogJobs({ limit: 24 }), 2500, []);
+  const preview = catalog.slice(0, 3);
 
   if (!preview.length) {
     return (
@@ -380,10 +368,9 @@ async function HomeJobPreview() {
         <OpportunityRadar jobs={[]} />
         <OpportunityTimeline jobs={[]} />
         <div className="panel space-y-3 p-6">
-          <p className="font-semibold">Aucune offre vérifiée en vitrine pour l&apos;instant</p>
+          <p className="font-semibold">Hey — coming soon</p>
           <p className="text-sm text-muted">
-            JobRadar n&apos;invente pas d&apos;entreprise. Lancez une recherche pour des offres réelles, ou attendez
-            qu&apos;une opportunité publiée apparaisse.
+            De nouvelles opportunités arrivent bientôt. Revenez un peu plus tard, ou lancez une recherche.
           </p>
           <div className="flex flex-wrap gap-3 pt-1">
             <Link href="/search" className="btn-primary rounded-full px-4 py-2 text-sm font-semibold">
@@ -397,9 +384,9 @@ async function HomeJobPreview() {
 
   return (
     <div className="space-y-4">
-      <OpportunityRadar jobs={stock.slice(0, 24)} />
+      <OpportunityRadar jobs={catalog} />
       <OpportunityTimeline
-        jobs={stock.slice(0, 20).map((job) => ({
+        jobs={catalog.slice(0, 20).map((job) => ({
           id: job.id,
           title: job.title,
           company: job.company,

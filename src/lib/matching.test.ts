@@ -170,6 +170,11 @@ describe("explainMatch", () => {
     expect(jobFitsSearchIntent(pharmacy, parseIntentHeuristic("stage cybersécurité Togo"))).toBe(false);
   });
 
+  it("lets the Offres catalog keep every verified job without a dummy query gate", () => {
+    expect(jobFitsSearchIntent(baseJob, parseIntentHeuristic(""))).toBe(true);
+    expect(jobFitsSearchIntent(baseJob, parseIntentHeuristic("opportunités pertinentes"))).toBe(false);
+  });
+
   it("labels eligibility without promising a hire", () => {
     const intent = parseIntentHeuristic("stage data remote Cotonou");
     const candidate = buildCandidate(intent, {

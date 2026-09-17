@@ -23,7 +23,7 @@ export function CoverLetterPanel({ jobId }: { jobId: string }) {
   return (
     <section className="panel space-y-3 p-6">
       <h3 className="font-semibold">Lettre de motivation</h3>
-      <p className="text-sm text-muted">RodiumAI rédige une base à partir de votre profil. Relisez avant d&apos;envoyer.</p>
+      <p className="text-sm text-muted">JobRadar rédige une base à partir de votre profil. Relisez avant d&apos;envoyer.</p>
       <button
         type="button"
         onClick={generate}

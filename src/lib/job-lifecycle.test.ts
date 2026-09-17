@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDeadline, isExpiredJob, jobLifecycle, isPubliclyListed, isExcludedFromSearch } from "./job-lifecycle";
+import { formatDeadline, ingestPublishFields, isExpiredJob, jobLifecycle, isPubliclyListed, isExcludedFromSearch } from "./job-lifecycle";
 
 describe("job lifecycle", () => {
   it("formats a deadline in English long form", () => {
@@ -26,7 +26,14 @@ describe("job lifecycle", () => {
     expect(isExcludedFromSearch({ status: "unpublished" })).toBe(true);
     expect(isExcludedFromSearch({ status: "archived" })).toBe(true);
     expect(isPubliclyListed({ active: true, status: "archived", deadline: null })).toBe(false);
+    expect(isPubliclyListed({ active: false, status: "pending", deadline: null })).toBe(true);
+    expect(isPubliclyListed({ active: true, status: "published", deadline: null })).toBe(true);
+    expect(isPubliclyListed({ active: false, status: "unpublished", deadline: null })).toBe(false);
     expect(isExcludedFromSearch({ status: "pending", deadline: null }, now)).toBe(false);
     expect(isExcludedFromSearch({ status: "pending", deadline: new Date("2026-09-10T12:00:00Z") }, now)).toBe(true);
+  });
+
+  it("publishes collected and AI-found jobs immediately", () => {
+    expect(ingestPublishFields()).toEqual({ status: "published", active: true });
   });
 });

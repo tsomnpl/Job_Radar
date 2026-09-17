@@ -4,15 +4,13 @@ import { JobCard } from "@/components/job-card";
 import { EmptyResults } from "@/components/empty-results";
 import { SearchBox } from "@/components/search-box";
 import { PageSkeleton } from "@/components/page-shell";
-import { rankJobsForUser } from "@/server/rank";
-import { parseIntentHeuristic } from "@/lib/intent";
-import { listStockJobs } from "@/server/jobs-store";
+import { listCatalogJobs } from "@/server/rank";
 import { getRequestLang, t } from "@/i18n";
 import { withTimeout } from "@/lib/timeout";
 
 export const metadata: Metadata = {
   title: "Jobs",
-  description: "Published opportunities on JobRadar. Never invented.",
+  description: "Live opportunities on JobRadar.",
 };
 
 export const dynamic = "force-dynamic";
@@ -37,18 +35,7 @@ export default async function JobsPage() {
 
 async function JobsStock() {
   const lang = await getRequestLang();
-  const stock = await withTimeout(listStockJobs(), 2500, []);
-  const ranked = stock.length
-    ? await withTimeout(
-        rankJobsForUser({
-          intent: parseIntentHeuristic("opportunités pertinentes"),
-          limit: 50,
-          minScore: 0,
-        }),
-        2500,
-        [],
-      )
-    : [];
+  const ranked = await withTimeout(listCatalogJobs({ limit: 80 }), 2500, []);
 
   if (ranked.length === 0) {
     return <EmptyResults />;

@@ -1,3 +1,4 @@
+import { ingestPublishFields } from "@/lib/job-lifecycle";
 import { normalizeJobInput } from "@/lib/import-jobs";
 import { upsertJobRecord } from "@/server/jobs-store";
 import type { SearchIntent } from "@/lib/types";
@@ -91,8 +92,7 @@ async function persistOpportunities(jobs: PublicOpportunity[]): Promise<number> 
       await upsertJobRecord({
         ...normalized,
         id: job.id,
-        active: false,
-        status: "pending",
+        ...ingestPublishFields(),
       });
       saved += 1;
     } catch {

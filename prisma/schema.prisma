@@ -86,8 +86,8 @@ model Job {
   endDate         DateTime?
   importedAt      DateTime       @default(now())
   fingerprint     String         @unique
-  active          Boolean        @default(false)
-  status          String         @default("pending")
+  active          Boolean        @default(true)
+  status          String         @default("published")
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   matches         Match[]

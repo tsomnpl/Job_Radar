@@ -39,7 +39,7 @@ export function MatchWhy({
         <p className="mt-1 text-sm text-muted">{match.eligibility.why}</p>
         <p className="mt-2 text-sm text-muted">{narrative}</p>
         <p className="mt-3 text-xs text-muted">
-          Score algorithmique déterministe ({match.score}%). Le texte d&apos;analyse peut utiliser RodiumAI.
+          Score de compatibilité ({match.score}%).
         </p>
       </section>
       <section className="panel space-y-2 p-6">

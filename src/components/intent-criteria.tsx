@@ -14,7 +14,7 @@ export function IntentCriteria({ intent }: { intent: SearchIntent }) {
   return (
     <section className="panel p-5">
       <p className="text-xs uppercase tracking-[0.18em] text-accent">
-        Intention extraite ({intent.source === "rodium" ? "RodiumAI" : "déterministe"})
+        Intention extraite
       </p>
       {rows.length ? (
         <dl className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -31,9 +31,7 @@ export function IntentCriteria({ intent }: { intent: SearchIntent }) {
         </div>
       )}
       <p className="mt-3 text-xs text-muted">
-        {intent.source === "rodium"
-          ? "Critères issus de RodiumAI. Le score de match reste algorithmique."
-          : "Critères extraits par règles déterministes (RodiumAI non utilisé pour cette requête)."}
+        Critères de votre recherche. Le score de match reste algorithmique.
       </p>
     </section>
   );

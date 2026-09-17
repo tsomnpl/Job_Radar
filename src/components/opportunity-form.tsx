@@ -261,17 +261,17 @@ export function OpportunityForm({ job }: { job?: JobRecord }) {
 
       <label className="text-sm">
         Status
-        <select name="status" defaultValue={job?.status ?? "pending"} className="field mt-1 w-full max-w-xs rounded-xl px-3 py-2">
-          <option value="pending">Pending</option>
+        <select name="status" defaultValue={job?.status ?? "published"} className="field mt-1 w-full max-w-xs rounded-xl px-3 py-2">
           <option value="published">Published</option>
+          <option value="pending">Pending</option>
           <option value="unpublished">Unpublished</option>
           <option value="archived">Archived</option>
         </select>
       </label>
 
       <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" name="publishNow" defaultChecked={job?.status === "published"} />
-        Publish now (otherwise keep selected status)
+        <input type="checkbox" name="publishNow" defaultChecked={job?.status !== "unpublished" && job?.status !== "archived"} />
+        Publish now (appears immediately on Offres)
       </label>
 
       <div className="flex flex-wrap gap-3">
