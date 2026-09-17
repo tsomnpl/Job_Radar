@@ -33,20 +33,26 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-xs uppercase tracking-[0.18em] text-accent">Private</p>
-        <h1 className="mt-2 text-3xl font-semibold">Admin Dashboard</h1>
-        <p className="mt-2 text-muted">Gérez de vraies opportunités. Rien n&apos;est inventé.</p>
+    <div data-admin-hud className="space-y-6">
+      <div className="relative flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="hud-kicker text-[10px] uppercase tracking-[0.28em]">
+            <span className="jr-live-dot mr-2 align-middle" />
+            Sys.core // admin
+          </p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Command Center</h1>
+          <p className="hud-muted mt-2 text-sm">Global telemetry — vraies opportunités uniquement. Rien n&apos;est inventé.</p>
+        </div>
+        <p className="hud-muted text-[10px] uppercase tracking-[0.2em]">{user.email ?? "admin"}</p>
       </div>
-      <nav className="flex flex-wrap gap-2 text-sm">
+      <nav className="relative flex flex-wrap gap-2 text-sm">
         {tabs.map((tab) => (
-          <Link key={tab.href} href={tab.href} className="rounded-full border border-line px-3 py-1.5 hover:border-accent">
+          <Link key={tab.href} href={tab.href} className="hud-tab rounded-full px-3 py-1.5">
             {tab.label}
           </Link>
         ))}
       </nav>
-      {children}
+      <div className="relative">{children}</div>
     </div>
   );
 }
