@@ -1,3 +1,4 @@
+import { parseJobCategory } from "@/lib/job-categories";
 import { parseContractType, parseRemoteType, parseSeniority, parseSkillList } from "@/lib/normalize";
 import { rodiumExtractSchema } from "@/server/ai-schema";
 import type { JobInput } from "@/lib/types";
@@ -22,7 +23,8 @@ JSON strict :
   "duration": string | null,
   "sourceUrl": string | null,
   "applicationUrl": string | null,
-  "deadline": string | null
+  "deadline": string | null,
+  "category": string | null
 }
 Ne fabrique pas d'entreprise, URL ou deadline absente du texte. Si un champ est inconnu, null ou [].`;
 
@@ -70,6 +72,7 @@ export async function extractJobFromText(raw: string): Promise<JobInput> {
       sourceUrl: json.sourceUrl ?? null,
       applicationUrl: json.applicationUrl ?? null,
       deadline: json.deadline ?? null,
+      category: parseJobCategory(json.category),
       source: "extract",
     };
   } catch {

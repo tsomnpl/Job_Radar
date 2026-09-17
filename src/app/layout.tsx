@@ -7,7 +7,8 @@ import { CommandPalette } from "@/components/command-palette";
 import { ThemeProvider } from "@/components/theme-provider";
 import { getSessionUser } from "@/lib/auth";
 import { clerkAppearance } from "@/lib/clerk-appearance";
-import { clerkClientProxyUrl, isClerkConfigured, isClerkProduction } from "@/lib/env";
+import { appUrl, clerkClientProxyUrl, isClerkConfigured, isClerkProduction } from "@/lib/env";
+import { getRequestLang, t } from "@/i18n";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -21,7 +22,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000"),
+  metadataBase: new URL(appUrl()),
   title: {
     default: "JobRadar — Your next opportunity, before you miss it.",
     template: "%s — JobRadar",
@@ -45,20 +46,21 @@ const THEME_BOOTSTRAP = `try{if(localStorage.getItem('jobradar-theme')==='dark')
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const clerkEnabled = isClerkConfigured();
   const user = await getSessionUser();
+  const lang = await getRequestLang();
   const signedIn = Boolean(user) && (!clerkEnabled || !user?.isDemo);
   const body = (
     <ThemeProvider>
-      <SiteHeader clerkEnabled={clerkEnabled} signedIn={signedIn} isAdmin={user?.role === "ADMIN"} />
+      <SiteHeader clerkEnabled={clerkEnabled} signedIn={signedIn} isAdmin={user?.role === "ADMIN"} lang={lang} />
       <CommandPalette signedIn={signedIn} />
       <main className="site-main mx-auto min-h-[70vh] w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
       <footer className="border-t border-line px-4 py-6 text-center text-xs text-muted">
-        <p>JobRadar · Your next opportunity, before you miss it.</p>
+        <p>{t(lang, "footer.tagline")}</p>
         <p className="mt-2 flex justify-center gap-4">
           <Link href="/privacy" className="hover:text-accent">
-            Privacy
+            {t(lang, "privacy.title")}
           </Link>
           <Link href="/terms" className="hover:text-accent">
-            Terms
+            {t(lang, "terms.title")}
           </Link>
         </p>
       </footer>
@@ -67,7 +69,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
 
   return (
     <html
-      lang="fr"
+      lang={lang}
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >

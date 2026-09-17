@@ -138,10 +138,19 @@ export function fingerprintJob(input: {
   company: string;
   location: string;
   sourceUrl?: string | null;
+  applicationUrl?: string | null;
+  deadline?: Date | string | null;
 }): string {
-  const canonical = canonicalSourceUrl(input.sourceUrl);
+  const canonical =
+    canonicalSourceUrl(input.applicationUrl) ?? canonicalSourceUrl(input.sourceUrl);
   if (canonical) return fold(canonical);
-  return [input.title, input.company, input.location].map(fold).join("|");
+  const deadline =
+    input.deadline instanceof Date
+      ? input.deadline.toISOString().slice(0, 10)
+      : typeof input.deadline === "string" && input.deadline.trim()
+        ? input.deadline.trim().slice(0, 10)
+        : "";
+  return [input.title, input.company, input.location, deadline].map(fold).join("|");
 }
 
 export function asJsonArray(value: string | null | undefined): string[] {

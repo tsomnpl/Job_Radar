@@ -1,0 +1,62 @@
+-- Finalization: category, archive-ready status, locale/prefs, notification type, job views, email log.
+
+ALTER TABLE "Job" ADD COLUMN IF NOT EXISTS "category" TEXT;
+
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "locale" TEXT NOT NULL DEFAULT 'fr';
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "emailNotifications" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "newOpportunityAlerts" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "deadlineAlerts" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "weeklyDigest" BOOLEAN NOT NULL DEFAULT false;
+
+ALTER TABLE "Profile" ADD COLUMN IF NOT EXISTS "domainsJson" TEXT NOT NULL DEFAULT '[]';
+ALTER TABLE "Profile" ADD COLUMN IF NOT EXISTS "contractTypesJson" TEXT NOT NULL DEFAULT '[]';
+ALTER TABLE "Profile" ADD COLUMN IF NOT EXISTS "keywordsJson" TEXT NOT NULL DEFAULT '[]';
+
+ALTER TABLE "Notification" ADD COLUMN IF NOT EXISTS "type" TEXT NOT NULL DEFAULT 'SYSTEM';
+
+CREATE TABLE IF NOT EXISTS "JobView" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "jobId" TEXT NOT NULL,
+    "seenAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "JobView_pkey" PRIMARY KEY ("id")
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "JobView_userId_jobId_key" ON "JobView"("userId", "jobId");
+
+CREATE TABLE IF NOT EXISTS "EmailLog" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT,
+    "jobId" TEXT,
+    "type" TEXT NOT NULL,
+    "status" TEXT NOT NULL,
+    "eventKey" TEXT NOT NULL,
+    "error" TEXT,
+    "sentAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "EmailLog_pkey" PRIMARY KEY ("id")
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "EmailLog_eventKey_key" ON "EmailLog"("eventKey");
+
+DO $$ BEGIN
+  ALTER TABLE "JobView" ADD CONSTRAINT "JobView_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "JobView" ADD CONSTRAINT "JobView_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "Job"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "EmailLog" ADD CONSTRAINT "EmailLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "EmailLog" ADD CONSTRAINT "EmailLog_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "Job"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;

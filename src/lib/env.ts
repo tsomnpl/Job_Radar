@@ -34,8 +34,65 @@ export function clerkProxyEnvSet(): boolean {
   return Boolean(process.env.NEXT_PUBLIC_CLERK_PROXY_URL?.trim());
 }
 
+/** Live Vercel host. Used when NEXT_PUBLIC_APP_URL is missing or still localhost. */
+export const PRODUCTION_APP_URL = "https://job-radar-six-ochre.vercel.app";
+
+function stripTrailingSlash(url: string): string {
+  return url.replace(/\/$/, "");
+}
+
+export function isLocalhostOrigin(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0" || host.endsWith(".local");
+  } catch {
+    return true;
+  }
+}
+
+function originFromHostOrUrl(raw: string | undefined | null): string | null {
+  const value = raw?.trim() ?? "";
+  if (!value) return null;
+  try {
+    const url = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(value) ? value : `https://${value}`);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    if (url.protocol === "http:" && !isLocalhostOrigin(url.origin)) {
+      return stripTrailingSlash(`https://${url.host}`);
+    }
+    return stripTrailingSlash(url.origin);
+  } catch {
+    return null;
+  }
+}
+
+function deployedOrigin(): string | null {
+  const candidates = [process.env.VERCEL_PROJECT_PRODUCTION_URL, process.env.VERCEL_URL];
+  for (const candidate of candidates) {
+    const origin = originFromHostOrUrl(candidate);
+    if (origin && !isLocalhostOrigin(origin)) return origin;
+  }
+  return null;
+}
+
+export function isDeployedRuntime(): boolean {
+  return Boolean(process.env.VERCEL) || process.env.NODE_ENV === "production";
+}
+
+/**
+ * Public site origin for metadata, sitemap, robots, and redirects.
+ * Localhost is allowed only on a local machine. A production/Vercel build
+ * never emits http://localhost:3000 even if NEXT_PUBLIC_APP_URL is still that value.
+ */
 export function appUrl(): string {
-  return (process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000").replace(/\/$/, "");
+  const configured = originFromHostOrUrl(process.env.NEXT_PUBLIC_APP_URL);
+  if (configured && !isLocalhostOrigin(configured)) return configured;
+
+  const deployed = deployedOrigin();
+  if (deployed) return deployed;
+
+  if (isDeployedRuntime()) return PRODUCTION_APP_URL;
+
+  return "http://localhost:3000";
 }
 
 export function isVercelAppHost(url = appUrl()): boolean {
@@ -78,7 +135,7 @@ export function parseEmailFrom(raw?: string | null): string | null {
 }
 
 export function isEmailConfigured(): boolean {
-  return Boolean(process.env.RESEND_API_KEY?.trim() && parseEmailFrom(process.env.EMAIL_FROM));
+  return Boolean(process.env.GMAIL_USER?.trim() && process.env.GMAIL_APP_PASSWORD?.trim());
 }
 
 export function rodiumBaseUrl(): string {

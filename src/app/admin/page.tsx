@@ -2,9 +2,12 @@ import Link from "next/link";
 import { AdminJobActions } from "@/components/admin-job-actions";
 import { AdminUserActions } from "@/components/admin-user-actions";
 import { AdminRadarForms } from "@/components/admin-extract-form";
+import { AdminEmailTest } from "@/components/admin-email-test";
+import { AdminHudStat, AdminKpiRing, AdminTelemetryRadar } from "@/components/admin-telemetry";
 import { ImportForm } from "@/components/import-form";
 import { getAdminOrNull } from "@/lib/admin-page";
 import { displayField, formatContract, formatJobDeadline } from "@/lib/jobs";
+import { jobLifecycle } from "@/lib/job-lifecycle";
 import { prisma } from "@/lib/prisma";
 import { listAllJobs } from "@/server/jobs-store";
 import { withTimeout } from "@/lib/timeout";
@@ -34,29 +37,68 @@ export default async function AdminPage({
     withTimeout(prisma.search.count().catch(() => 0), 2500, 0),
   ]);
 
+  const pendingCount = jobs.filter((job) => job.status === "pending").length;
+  const publishedCount = jobs.filter((job) => job.status === "published").length;
+  const closingSoon = jobs.filter((job) => jobLifecycle(job.deadline) === "closing_soon").slice(0, 6);
+  const incoming = pending.slice(0, 6);
+
   return (
     <div className="space-y-6">
       {tab === "overview" || !tab ? (
-        <section className="grid gap-4 md:grid-cols-4">
-          <article className="panel p-5">
-            <p className="text-xs uppercase tracking-[0.16em] text-muted">Total</p>
-            <p className="mt-2 text-3xl font-semibold">{jobs.length}</p>
-          </article>
-          <article className="panel p-5">
-            <p className="text-xs uppercase tracking-[0.16em] text-muted">Pending</p>
-            <p className="mt-2 text-3xl font-semibold">{jobs.filter((job) => job.status === "pending").length}</p>
-          </article>
-          <article className="panel p-5">
-            <p className="text-xs uppercase tracking-[0.16em] text-muted">Published</p>
-            <p className="mt-2 text-3xl font-semibold">{jobs.filter((job) => job.status === "published").length}</p>
-          </article>
-          <article className="panel p-5">
-            <p className="text-xs uppercase tracking-[0.16em] text-muted">Users / searches</p>
-            <p className="mt-2 text-3xl font-semibold">
-              {userCount} / {searchCount}
-            </p>
-          </article>
-        </section>
+        <>
+          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <AdminHudStat label="Total stock" value={String(jobs.length)} hint="Real opportunities in database" />
+            <AdminKpiRing label="Pending" value={pendingCount} total={Math.max(jobs.length, 1)} tone="cyan" />
+            <AdminKpiRing label="Published" value={publishedCount} total={Math.max(jobs.length, 1)} tone="blue" />
+            <AdminHudStat label="Users / searches" value={`${userCount} / ${searchCount}`} hint="Accounts and saved searches" />
+          </section>
+          <section className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+            <AdminTelemetryRadar
+              jobs={jobs.map((job) => ({
+                id: job.id,
+                title: job.title,
+                company: job.company,
+                status: job.status,
+                deadline: job.deadline,
+              }))}
+            />
+            <div className="space-y-4">
+              <section className="hud-panel p-5">
+                <p className="text-[10px] uppercase tracking-[0.2em] hud-kicker">Closing soon</p>
+                {closingSoon.length ? (
+                  <ul className="mt-3 space-y-2 text-sm">
+                    {closingSoon.map((job) => (
+                      <li key={job.id}>
+                        <Link href={`/admin/jobs/${job.id}/edit`} className="hover:text-accent">
+                          {displayField(job.company)} — {displayField(job.title)}
+                        </Link>
+                        <span className="hud-muted ml-2 text-xs">{formatJobDeadline(job.deadline)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-3 text-sm hud-muted">No matching opportunities found.</p>
+                )}
+              </section>
+              <section className="hud-panel p-5">
+                <p className="text-[10px] uppercase tracking-[0.2em] hud-kicker">Incoming pending</p>
+                {incoming.length ? (
+                  <ul className="mt-3 space-y-2 text-sm">
+                    {incoming.map((job) => (
+                      <li key={job.id}>
+                        <Link href={`/admin/jobs/${job.id}/edit`} className="hover:text-accent">
+                          {displayField(job.title)}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-3 text-sm hud-muted">Aucune offre en attente.</p>
+                )}
+              </section>
+            </div>
+          </section>
+        </>
       ) : null}
 
       {tab === "overview" ? (
@@ -74,6 +116,7 @@ export default async function AdminPage({
               <ImportForm />
             </div>
           </div>
+          <AdminEmailTest />
         </section>
       ) : null}
 

@@ -47,6 +47,7 @@ function toRecord(data: JobWriteInput): JobRecord {
     sourceUrl: data.sourceUrl,
     applicationUrl: data.applicationUrl,
     source: data.source,
+    category: data.category ?? null,
     language: data.language,
     postedAt: data.postedAt,
     deadline: data.deadline,
@@ -64,11 +65,14 @@ export async function upsertJobRecord(data: JobWriteInput): Promise<JobRecord | 
     const existing = await prisma.job.findUnique({ where: { fingerprint: data.fingerprint } });
     const keepPublished = existing?.status === "published";
     const keepUnpublished = existing?.status === "unpublished";
+    const keepArchived = existing?.status === "archived";
     const status = keepPublished
       ? "published"
-      : keepUnpublished
-        ? "unpublished"
-        : (data.status ?? "pending");
+      : keepArchived
+        ? "archived"
+        : keepUnpublished
+          ? "unpublished"
+          : (data.status ?? "pending");
     const active = status === "published";
     const { id, ...rest } = data;
     const payload = {
@@ -92,9 +96,10 @@ export async function upsertJobRecord(data: JobWriteInput): Promise<JobRecord | 
       benefits: existing?.benefits ?? rest.benefits,
       duration: existing?.duration ?? rest.duration,
       contactInfo: existing?.contactInfo ?? rest.contactInfo,
-      sourceUrl: rest.sourceUrl,
+    sourceUrl: rest.sourceUrl,
       applicationUrl: existing?.applicationUrl ?? rest.applicationUrl,
       source: rest.source,
+      category: rest.category ?? existing?.category ?? null,
       language: rest.language,
       postedAt: rest.postedAt,
       deadline: existing?.deadline ?? rest.deadline,
@@ -164,6 +169,7 @@ export async function getJobById(id: string): Promise<JobRecord | null> {
     if (job) {
       const record = toJobRecord(job);
       if (!isStockJob(record)) return null;
+      if (record.status === "archived" || record.status === "unpublished") return null;
       if (record.status === "published") return record;
       if (record.status === "pending" && isPublicBoardSource(record.source)) return record;
     }
@@ -190,6 +196,54 @@ export async function listAllJobs(): Promise<(JobRecord & { active: boolean })[]
   } catch (error) {
     logDbError("listAllJobs", error);
     return [...memoryJobs.values()].map((job) => ({ ...job, active: job.active ?? false }));
+  }
+}
+
+export async function persistRememberedJob(job: JobRecord): Promise<JobRecord | null> {
+  rememberJob(job);
+  if (await jobExistsInDb(job.id)) return job;
+  const { normalizeJobInput } = await import("@/lib/import-jobs");
+  try {
+    const normalized = normalizeJobInput({
+      title: job.title,
+      company: job.company,
+      companyLogo: job.companyLogo,
+      location: job.location,
+      country: job.country,
+      remoteType: job.remoteType,
+      contractType: job.contractType,
+      seniority: job.seniority,
+      salaryMin: job.salaryMin,
+      salaryMax: job.salaryMax,
+      currency: job.currency,
+      skills: job.skills,
+      languages: job.languages,
+      description: job.description,
+      requirements: job.requirements,
+      education: job.education,
+      experience: job.experience,
+      benefits: job.benefits,
+      duration: job.duration,
+      contactInfo: job.contactInfo,
+      sourceUrl: job.sourceUrl,
+      applicationUrl: job.applicationUrl,
+      source: job.source,
+      category: job.category,
+      language: job.language,
+      postedAt: job.postedAt,
+      deadline: job.deadline,
+      startDate: job.startDate,
+      endDate: job.endDate,
+    });
+    return await upsertJobRecord({
+      ...normalized,
+      id: job.id,
+      status: job.status === "published" ? "published" : "pending",
+      active: job.status === "published",
+    });
+  } catch (error) {
+    logDbError("persistRememberedJob", error);
+    return null;
   }
 }
 

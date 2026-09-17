@@ -6,11 +6,13 @@ export async function notifyUser(input: {
   title: string;
   body: string;
   href?: string | null;
+  type?: string;
 }): Promise<void> {
   try {
     await prisma.notification.create({
       data: {
         userId: input.userId,
+        type: input.type ?? "SYSTEM",
         title: input.title,
         body: input.body,
         href: input.href ?? null,

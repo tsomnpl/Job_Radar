@@ -9,7 +9,15 @@ const PROMPTS = [
   "Quels éléments dois-je vérifier ?",
 ];
 
-export function OpportunityCopilot({ jobId, signedIn }: { jobId: string; signedIn: boolean }) {
+export function OpportunityCopilot({
+  jobId,
+  signedIn,
+  lang = "fr",
+}: {
+  jobId: string;
+  signedIn: boolean;
+  lang?: "fr" | "en";
+}) {
   const [question, setQuestion] = useState(PROMPTS[0] ?? "");
   const [answer, setAnswer] = useState<string | null>(null);
   const [source, setSource] = useState<string | null>(null);
@@ -19,7 +27,7 @@ export function OpportunityCopilot({ jobId, signedIn }: { jobId: string; signedI
   async function ask(event: React.FormEvent) {
     event.preventDefault();
     if (!signedIn) {
-      setError("Sign in or create your JobRadar account to continue.");
+      setError(lang === "en" ? "Sign in or create your JobRadar account to continue." : "Connectez-vous ou créez un compte JobRadar pour continuer.");
       return;
     }
     setPending(true);
@@ -53,9 +61,11 @@ export function OpportunityCopilot({ jobId, signedIn }: { jobId: string; signedI
 
   return (
     <section className="panel space-y-3 p-6">
-      <h3 className="font-semibold">Opportunity Copilot</h3>
+      <h3 className="font-semibold">{lang === "en" ? "Opportunity Copilot" : "Opportunity Copilot"}</h3>
       <p className="text-sm text-muted">
-        Assistant lié à cette offre. Il n&apos;invente pas de deadline, salaire ou URL.
+        {lang === "en"
+          ? "Assistant for this offer. It does not invent deadlines, salaries, or URLs."
+          : "Assistant lié à cette offre. Il n'invente pas de deadline, salaire ou URL."}
       </p>
       <form onSubmit={ask} className="space-y-3">
         <label className="block text-sm">

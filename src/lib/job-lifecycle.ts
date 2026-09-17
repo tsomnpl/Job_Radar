@@ -1,6 +1,6 @@
 import { NOT_SPECIFIED } from "@/lib/jobs";
 
-export const JOB_STATUSES = ["pending", "published", "unpublished", "expired"] as const;
+export const JOB_STATUSES = ["pending", "published", "unpublished", "archived", "expired"] as const;
 export type JobPublishStatus = (typeof JOB_STATUSES)[number];
 
 export const LIFECYCLE_LABELS = {
@@ -74,6 +74,7 @@ export function isPubliclyListed(job: {
   deadline?: Date | string | null;
 }): boolean {
   if (job.status && job.status !== "published") return false;
+  if (job.status === "archived" || job.status === "unpublished") return false;
   if (job.active === false) return false;
   return !isExpiredJob(job.deadline);
 }
@@ -86,6 +87,6 @@ export function isExcludedFromSearch(
   },
   now = new Date(),
 ): boolean {
-  if (job.status === "unpublished" || job.status === "expired") return true;
+  if (job.status === "unpublished" || job.status === "archived" || job.status === "expired") return true;
   return isExpiredJob(job.deadline, now);
 }

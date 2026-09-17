@@ -8,20 +8,27 @@ datasource db {
 }
 
 model User {
-  id               String         @id @default(cuid())
-  clerkUserId      String         @unique
-  email            String?
-  name             String?
-  role             String         @default("USER")
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  profile          Profile?
-  searches         Search[]
-  matches          Match[]
-  savedJobs        SavedJob[]
-  applications     Application[]
-  notifications    Notification[]
-  lastAlertEmailAt DateTime?
+  id                    String         @id @default(cuid())
+  clerkUserId           String         @unique
+  email                 String?
+  name                  String?
+  role                  String         @default("USER")
+  locale                String         @default("fr")
+  emailNotifications    Boolean        @default(false)
+  newOpportunityAlerts  Boolean        @default(true)
+  deadlineAlerts        Boolean        @default(true)
+  weeklyDigest          Boolean        @default(false)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  profile               Profile?
+  searches              Search[]
+  matches               Match[]
+  savedJobs             SavedJob[]
+  applications          Application[]
+  notifications         Notification[]
+  jobViews              JobView[]
+  emailLogs             EmailLog[]
+  lastAlertEmailAt      DateTime?
 }
 
 model Profile {
@@ -37,10 +44,13 @@ model Profile {
   education        String?
   seniority        String?
   yearsExperience  Int?
-  remotePreference String?
-  parsedAt         DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  remotePreference   String?
+  domainsJson        String    @default("[]")
+  contractTypesJson  String    @default("[]")
+  keywordsJson       String    @default("[]")
+  parsedAt           DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 }
 
 model Job {
@@ -68,6 +78,7 @@ model Job {
   sourceUrl       String?
   applicationUrl  String?
   source          String         @default("manual")
+  category        String?
   contactInfo     String?
   postedAt        DateTime       @default(now())
   deadline        DateTime?
@@ -82,6 +93,8 @@ model Job {
   matches         Match[]
   savedJobs       SavedJob[]
   applications    Application[]
+  jobViews        JobView[]
+  emailLogs       EmailLog[]
 }
 
 model Search {
@@ -137,6 +150,7 @@ model Application {
 model Notification {
   id        String    @id @default(cuid())
   userId    String
+  type      String    @default("SYSTEM")
   title     String
   body      String
   href      String?
@@ -145,6 +159,31 @@ model Notification {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+}
+
+model JobView {
+  id        String   @id @default(cuid())
+  userId    String
+  jobId     String
+  seenAt    DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobId])
+}
+
+model EmailLog {
+  id        String    @id @default(cuid())
+  userId    String?
+  jobId     String?
+  type      String
+  status    String
+  eventKey  String    @unique
+  error     String?
+  sentAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  job       Job?      @relation(fields: [jobId], references: [id], onDelete: SetNull)
 }
 
 model ImportBatch {

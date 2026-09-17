@@ -3,6 +3,7 @@ import { adminEmail, isClerkConfigured, isConfiguredAdmin } from "@/lib/env";
 import { logDbError } from "@/lib/db";
 import { prisma } from "@/lib/prisma";
 import { withTimeout } from "@/lib/timeout";
+import { sendWelcomeEmail } from "@/server/transactional-email";
 
 export const DEMO_CLERK_ID = "demo_local_user";
 
@@ -110,6 +111,15 @@ async function upsertAppUser(input: {
       role,
     },
   });
+
+  if (!existing && input.clerkUserId !== DEMO_CLERK_ID) {
+    void sendWelcomeEmail({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      locale: user.locale,
+    }).catch((error) => logDbError("welcomeEmail", error));
+  }
 
   return toAppUser(user);
 }

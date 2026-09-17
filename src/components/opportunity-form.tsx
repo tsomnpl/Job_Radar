@@ -49,7 +49,10 @@ export function OpportunityForm({ job }: { job?: JobRecord }) {
       country: String(form.get("country") ?? ""),
       contactInfo: String(form.get("contactInfo") ?? ""),
       requirements: String(form.get("requirements") ?? ""),
-      publishNow: form.get("publishNow") === "on",
+      category: String(form.get("category") ?? ""),
+      source: String(form.get("source") ?? ""),
+      status: String(form.get("status") ?? ""),
+      publishNow: form.get("publishNow") === "on" || String(form.get("status") ?? "") === "published",
     };
     const endpoint = job ? `/api/admin/jobs/${job.id}` : "/api/admin/jobs";
     const response = await fetch(endpoint, {
@@ -100,6 +103,20 @@ export function OpportunityForm({ job }: { job?: JobRecord }) {
               <option value="freelance">Freelance</option>
               <option value="mission">Mission</option>
               <option value="apprenticeship">Apprenticeship</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+          <label className="text-sm">
+            Category
+            <select name="category" defaultValue={job?.category ?? ""} className="field mt-1 w-full rounded-xl px-3 py-2">
+              <option value="">Not specified</option>
+              <option value="cybersecurity">Cybersecurity</option>
+              <option value="data">Data</option>
+              <option value="engineering">Engineering</option>
+              <option value="product">Product</option>
+              <option value="business">Business</option>
+              <option value="ong">NGO / ONG</option>
+              <option value="international">International</option>
               <option value="other">Other</option>
             </select>
           </label>
@@ -172,6 +189,10 @@ export function OpportunityForm({ job }: { job?: JobRecord }) {
             Official application URL
             <input name="applicationUrl" type="url" defaultValue={job?.applicationUrl ?? ""} className="field mt-1 w-full rounded-xl px-3 py-2" />
           </label>
+          <label className="text-sm md:col-span-2">
+            Source name
+            <input name="source" defaultValue={job?.source ?? "manual"} className="field mt-1 w-full rounded-xl px-3 py-2" />
+          </label>
         </div>
       </section>
 
@@ -238,9 +259,19 @@ export function OpportunityForm({ job }: { job?: JobRecord }) {
         </div>
       </section>
 
+      <label className="text-sm">
+        Status
+        <select name="status" defaultValue={job?.status ?? "pending"} className="field mt-1 w-full max-w-xs rounded-xl px-3 py-2">
+          <option value="pending">Pending</option>
+          <option value="published">Published</option>
+          <option value="unpublished">Unpublished</option>
+          <option value="archived">Archived</option>
+        </select>
+      </label>
+
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" name="publishNow" defaultChecked={job?.status === "published"} />
-        Publish now (otherwise saved as pending)
+        Publish now (otherwise keep selected status)
       </label>
 
       <div className="flex flex-wrap gap-3">

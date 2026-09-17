@@ -16,7 +16,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "INVALID_INPUT", details: parsed.error.flatten() }, { status: 400 });
     }
     const input = parsed.data;
-    const status = input.publishNow ? "published" : "pending";
+    const status = input.publishNow ? "published" : input.status || "pending";
     const normalized = normalizeJobInput({
       title: input.title,
       company: input.company,
@@ -40,7 +40,8 @@ export async function POST(request: Request) {
       contactInfo: input.contactInfo,
       sourceUrl: input.sourceUrl,
       applicationUrl: input.applicationUrl,
-      source: "manual",
+      source: input.source || "manual",
+      category: input.category,
       language: input.language,
       postedAt: input.postedAt,
       deadline: input.deadline,

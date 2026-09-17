@@ -11,11 +11,15 @@ import { requirePageUser } from "@/lib/page-guard";
 import { asJsonArray } from "@/lib/normalize";
 import { prisma } from "@/lib/prisma";
 import { parseIntentHeuristic } from "@/lib/intent";
+import { OpportunityCopilot } from "@/components/opportunity-copilot";
 import { OpportunityRadar } from "@/components/opportunity-radar";
 import { OpportunityTimeline } from "@/components/opportunity-timeline";
+import { getRequestLang, t } from "@/i18n";
+import { isClerkConfigured } from "@/lib/env";
 import { jobLifecycle } from "@/lib/job-lifecycle";
 import { rankJobsForUser } from "@/server/rank";
 import { listStockJobs } from "@/server/jobs-store";
+import { listSeenJobIds } from "@/server/job-views";
 import { withTimeout } from "@/lib/timeout";
 
 export const metadata: Metadata = {
@@ -27,11 +31,12 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   await requirePageUser("/dashboard");
+  const lang = await getRequestLang();
   return (
     <div className="space-y-8">
       <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-accent">Career Command Center</p>
-        <h1 className="mt-2 text-3xl font-semibold">My Radar</h1>
+        <p className="text-xs uppercase tracking-[0.2em] text-accent">{t(lang, "dashboard.kicker")}</p>
+        <h1 className="mt-2 text-3xl font-semibold">{t(lang, "dashboard.title")}</h1>
         <p className="mt-2 text-muted">
           Préférences, opportunités recommandées, sauvegardes, candidatures et CV.
         </p>
@@ -147,6 +152,10 @@ async function DashboardData() {
   const skills = asJsonArray(profile?.skillsJson);
   const empty =
     stock.length === 0 && saved.length === 0 && searches.length === 0 && !profile?.cvText && skills.length === 0;
+  const seen = user && isPersistedUser(user) ? await listSeenJobIds(user.id) : new Set<string>();
+  const newForYou = ranked.filter((job) => !seen.has(job.id)).slice(0, 4);
+  const lang = await getRequestLang();
+  const signedIn = Boolean(user) && (!isClerkConfigured() || !user?.isDemo);
 
   return (
     <>
@@ -203,6 +212,25 @@ async function DashboardData() {
       </section>
 
       <OpportunityRadar jobs={ranked} />
+      <section className="panel p-6">
+        <h2 className="font-semibold">{t(lang, "dashboard.new")}</h2>
+        {newForYou.length ? (
+          <ul className="mt-3 space-y-2 text-sm">
+            {newForYou.map((job) => (
+              <li key={job.id}>
+                <Link href={`/jobs/${job.id}`} className="hover:text-accent">
+                  {job.company} — {job.title} · {job.match.score}%
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-3 text-sm text-muted">{t(lang, "dashboard.newEmpty")}</p>
+        )}
+      </section>
+      {ranked[0] ? (
+        <OpportunityCopilot jobId={ranked[0].id} signedIn={signedIn} lang={lang} />
+      ) : null}
       <OpportunityTimeline
         jobs={stock.slice(0, 20).map((job) => ({
           id: job.id,

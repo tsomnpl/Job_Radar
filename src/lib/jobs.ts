@@ -27,6 +27,7 @@ export function toJobRecord(job: {
   sourceUrl: string | null;
   applicationUrl?: string | null;
   source: string;
+  category?: string | null;
   language: string;
   postedAt: Date;
   deadline?: Date | null;
@@ -61,6 +62,7 @@ export function toJobRecord(job: {
     sourceUrl: job.sourceUrl,
     applicationUrl: job.applicationUrl ?? null,
     source: job.source,
+    category: job.category ?? null,
     language: job.language,
     postedAt: job.postedAt,
     deadline: job.deadline ?? null,

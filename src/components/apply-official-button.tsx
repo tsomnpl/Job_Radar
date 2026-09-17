@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { NOT_SPECIFIED } from "@/lib/jobs";
+import { t, type AppLang } from "@/i18n/messages";
 
 export function ApplyOfficialButton({
   jobId,
@@ -10,21 +10,24 @@ export function ApplyOfficialButton({
   signedIn,
   clerkEnabled,
   alreadyApplied,
+  lang = "fr",
 }: {
   jobId: string;
   officialUrl: string | null;
   signedIn: boolean;
   clerkEnabled: boolean;
   alreadyApplied?: boolean;
+  lang?: AppLang;
 }) {
   const [pending, setPending] = useState(false);
   const [applied, setApplied] = useState(Boolean(alreadyApplied));
+  const [tracked, setTracked] = useState(Boolean(alreadyApplied));
   const returnTo = `/jobs/${jobId}`;
 
   if (!officialUrl) {
     return (
       <button type="button" disabled className="btn-primary rounded-full px-4 py-2 text-sm font-semibold opacity-60">
-        Postuler — {NOT_SPECIFIED}
+        {t(lang, "apply.missing")}
       </button>
     );
   }
@@ -32,37 +35,38 @@ export function ApplyOfficialButton({
   if (clerkEnabled && !signedIn) {
     return (
       <div className="panel space-y-3 p-4">
-        <p className="font-semibold">Postuler</p>
-        <p className="text-sm text-muted">Connectez-vous ou créez un compte JobRadar pour continuer.</p>
+        <p className="font-semibold">{t(lang, "cta.apply")}</p>
+        <p className="text-sm text-muted">{t(lang, "apply.needAuth")}</p>
         <div className="flex flex-wrap gap-3">
           <Link
             href={`/sign-in?redirect_url=${encodeURIComponent(returnTo)}`}
             className="btn-primary rounded-full px-4 py-2 text-sm font-semibold"
           >
-            Sign in
+            {t(lang, "cta.signIn")}
           </Link>
           <Link
             href={`/sign-up?redirect_url=${encodeURIComponent(returnTo)}`}
             className="rounded-full border border-line px-4 py-2 text-sm font-semibold"
           >
-            Create account
+            {t(lang, "cta.signUp")}
           </Link>
         </div>
       </div>
     );
   }
 
-  const applyUrl = officialUrl;
-
   async function openOfficial() {
     setPending(true);
     try {
-      await fetch(`/api/jobs/${jobId}/apply`, { method: "POST" });
+      const response = await fetch(`/api/jobs/${jobId}/apply`, { method: "POST" });
+      const data = (await response.json().catch(() => ({}))) as { tracked?: boolean };
       setApplied(true);
+      setTracked(Boolean(data.tracked));
     } catch {
-      /* still open the official URL */
+      setApplied(true);
+      setTracked(false);
     }
-    window.open(applyUrl, "_blank", "noopener,noreferrer");
+    window.open(officialUrl!, "_blank", "noopener,noreferrer");
     setPending(false);
   }
 
@@ -74,10 +78,12 @@ export function ApplyOfficialButton({
         disabled={pending}
         className="btn-primary rounded-full px-4 py-2 text-sm font-semibold disabled:opacity-60"
       >
-        {pending ? "Opening…" : "Postuler maintenant"}
+        {pending ? t(lang, "apply.opening") : t(lang, "cta.apply")}
       </button>
       {applied ? (
-        <p className="text-xs text-muted">Marked as applied — you opened the official link. JobRadar did not submit the application for you.</p>
+        <p className="text-xs text-muted" role="status" aria-live="polite">
+          {tracked ? t(lang, "apply.marked") : t(lang, "apply.untracked")}
+        </p>
       ) : null}
     </div>
   );

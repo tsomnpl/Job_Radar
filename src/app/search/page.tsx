@@ -8,6 +8,7 @@ import { applySearchFilters, readSearchFilters } from "@/lib/search-filters";
 import { collectPublicOpportunitiesForIntent, PUBLIC_BOARD_LABELS } from "@/server/collect";
 import { persistSearch, rankJobsForUser } from "@/server/rank";
 import { resolveIntent } from "@/server/search";
+import { getRequestLang, t } from "@/i18n";
 import { withTimeout } from "@/lib/timeout";
 import { Suspense } from "react";
 import { PageSkeleton } from "@/components/page-shell";
@@ -31,13 +32,12 @@ export default async function SearchPage({
   const query = (Array.isArray(params.q) ? params.q[0] : params.q)?.trim() ?? "";
   const filters = readSearchFilters(params);
   const hasFilters = Object.values(filters).some(Boolean);
+  const lang = await getRequestLang();
   if (!query && !hasFilters) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-semibold">Recherche d&apos;opportunités</h1>
-        <p className="text-muted">
-          Décrivez une vraie piste. JobRadar ne fabrique pas d&apos;offre s&apos;il n&apos;y a pas de match.
-        </p>
+        <h1 className="text-3xl font-semibold">{t(lang, "search.title")}</h1>
+        <p className="text-muted">{t(lang, "empty.hint")}</p>
         <SearchBox />
         <SearchFiltersForm query="" filters={filters} />
         <section className="panel p-6 text-sm text-muted">
@@ -50,7 +50,7 @@ export default async function SearchPage({
   return (
     <div className="space-y-8">
       <div className="space-y-4">
-        <h1 className="text-3xl font-semibold">Radar de recherche</h1>
+        <h1 className="text-3xl font-semibold">{t(lang, "search.radar")}</h1>
         <SearchBox initialQuery={query} size="md" />
         <SearchFiltersForm query={query} filters={filters} />
       </div>
@@ -62,6 +62,7 @@ export default async function SearchPage({
 }
 
 async function SearchResults({ query, filters }: { query: string; filters: SearchFilters }) {
+  const lang = await getRequestLang();
   const heuristic = parseIntentHeuristic(query);
   const [intent] = await Promise.all([
     withTimeout(resolveIntent(query), 8000, heuristic),
@@ -76,10 +77,10 @@ async function SearchResults({ query, filters }: { query: string; filters: Searc
 
       {ranked.length ? (
         <section className="space-y-4">
-          <h2 className="text-xl font-semibold">Verified opportunities</h2>
+          <h2 className="text-xl font-semibold">{lang === "fr" ? "Opportunités vérifiées" : "Verified opportunities"}</h2>
           <div className="grid gap-4">
             {ranked.map((job) => (
-              <JobCard key={job.id} job={job} query={query} />
+              <JobCard key={job.id} job={job} query={query} lang={lang} />
             ))}
           </div>
         </section>

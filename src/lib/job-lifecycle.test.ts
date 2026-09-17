@@ -24,6 +24,8 @@ describe("job lifecycle", () => {
       }),
     ).toBe(false);
     expect(isExcludedFromSearch({ status: "unpublished" })).toBe(true);
+    expect(isExcludedFromSearch({ status: "archived" })).toBe(true);
+    expect(isPubliclyListed({ active: true, status: "archived", deadline: null })).toBe(false);
     expect(isExcludedFromSearch({ status: "pending", deadline: null }, now)).toBe(false);
     expect(isExcludedFromSearch({ status: "pending", deadline: new Date("2026-09-10T12:00:00Z") }, now)).toBe(true);
   });

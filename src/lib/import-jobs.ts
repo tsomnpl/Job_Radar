@@ -27,6 +27,7 @@ export type NormalizedJobInput = {
   sourceUrl: string | null;
   applicationUrl: string | null;
   source: string;
+  category: string | null;
   language: string;
   postedAt: Date;
   deadline: Date | null;
@@ -133,12 +134,20 @@ export function normalizeJobInput(input: JobInput): NormalizedJobInput {
     sourceUrl,
     applicationUrl,
     source: input.source?.trim() || "manual",
+    category: optionalText(input.category),
     language: input.language?.trim() || "",
     postedAt: asDate(input.postedAt),
     deadline: parseOptionalDate(input.deadline),
     startDate: parseOptionalDate(input.startDate),
     endDate: parseOptionalDate(input.endDate),
-    fingerprint: fingerprintJob({ title, company, location, sourceUrl: sourceUrl ?? input.sourceUrl }),
+    fingerprint: fingerprintJob({
+      title,
+      company,
+      location,
+      sourceUrl: sourceUrl ?? input.sourceUrl,
+      applicationUrl,
+      deadline: parseOptionalDate(input.deadline),
+    }),
   };
 }
 

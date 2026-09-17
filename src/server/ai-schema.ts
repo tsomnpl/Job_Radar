@@ -46,6 +46,7 @@ export const rodiumExtractSchema = z.object({
   sourceUrl: z.string().optional().nullable(),
   applicationUrl: z.string().optional().nullable(),
   deadline: z.string().optional().nullable(),
+  category: z.string().optional().nullable(),
 });
 
 export const rodiumCopilotSchema = z.object({

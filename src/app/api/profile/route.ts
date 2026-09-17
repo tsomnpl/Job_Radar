@@ -14,16 +14,30 @@ export async function POST(request: Request) {
       locations?: string;
       seniority?: string;
       remotePreference?: string;
+      domains?: string;
+      contractTypes?: string;
+      keywords?: string;
+      emailNotifications?: boolean;
+      newOpportunityAlerts?: boolean;
+      deadlineAlerts?: boolean;
+      weeklyDigest?: boolean;
+      locale?: string;
     } | null;
 
     const headline = body?.headline?.trim() || null;
     const skills = parseSkillList(body?.skills ?? "");
     const locations = parseSkillList(body?.locations ?? "");
+    const domains = parseSkillList(body?.domains ?? body?.headline ?? "");
+    const contractTypes = parseSkillList(body?.contractTypes ?? "");
+    const keywords = parseSkillList(body?.keywords ?? "");
     const seniority = parseSeniority(body?.seniority ?? null);
     const remotePreference = parseRemoteType(body?.remotePreference ?? null);
 
     if (!isPersistedUser(user)) {
-      return NextResponse.json({ persisted: false, profile: { headline, skills, locations, seniority, remotePreference } });
+      return NextResponse.json({
+        persisted: false,
+        profile: { headline, skills, locations, seniority, remotePreference, domains, contractTypes, keywords },
+      });
     }
 
     const profile = await prisma.profile.upsert({
@@ -34,6 +48,9 @@ export async function POST(request: Request) {
         locationsJson: JSON.stringify(locations),
         seniority,
         remotePreference,
+        domainsJson: JSON.stringify(domains),
+        contractTypesJson: JSON.stringify(contractTypes),
+        keywordsJson: JSON.stringify(keywords),
       },
       create: {
         userId: user.id,
@@ -42,6 +59,18 @@ export async function POST(request: Request) {
         locationsJson: JSON.stringify(locations),
         seniority,
         remotePreference,
+        domainsJson: JSON.stringify(domains),
+        contractTypesJson: JSON.stringify(contractTypes),
+        keywordsJson: JSON.stringify(keywords),
+      },
+    });
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        ...(typeof body?.emailNotifications === "boolean" ? { emailNotifications: body.emailNotifications } : {}),
+        ...(typeof body?.newOpportunityAlerts === "boolean" ? { newOpportunityAlerts: body.newOpportunityAlerts } : {}),
+        ...(typeof body?.deadlineAlerts === "boolean" ? { deadlineAlerts: body.deadlineAlerts } : {}),
+        ...(typeof body?.weeklyDigest === "boolean" ? { weeklyDigest: body.weeklyDigest } : {}),
       },
     });
 
