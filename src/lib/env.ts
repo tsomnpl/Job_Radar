@@ -181,10 +181,11 @@ export function isConfiguredAdmin(input: {
   return Boolean(input.clerkUserId && ids.includes(input.clerkUserId));
 }
 
-/** Credits paused. Set RODIUMAI_ENABLED=true on Vercel after topping up to resume API calls. */
+/** Optional kill switch. Unset/true = on when the API key is present. Set RODIUMAI_ENABLED=false to pause. */
 export function isRodiumEnabled(): boolean {
   const flag = process.env.RODIUMAI_ENABLED?.trim().toLowerCase();
-  return flag === "1" || flag === "true" || flag === "on" || flag === "yes";
+  if (flag === "0" || flag === "false" || flag === "off" || flag === "no") return false;
+  return true;
 }
 
 export function isRodiumConfigured(): boolean {

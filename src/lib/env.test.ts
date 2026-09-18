@@ -138,19 +138,20 @@ describe("parseEmailFrom", () => {
 });
 
 describe("isRodiumConfigured", () => {
-  it("stays off by default even when an API key is present", () => {
+  it("is on when an API key is present", () => {
     process.env.RODIUMAI_API_KEY = "rd_sk_example";
     delete process.env.RODIUMAI_ENABLED;
-    expect(isRodiumEnabled()).toBe(false);
-    expect(isRodiumConfigured()).toBe(false);
-  });
-
-  it("turns on only with an explicit enable flag and a key", () => {
-    process.env.RODIUMAI_API_KEY = "rd_sk_example";
-    process.env.RODIUMAI_ENABLED = "true";
     expect(isRodiumEnabled()).toBe(true);
     expect(isRodiumConfigured()).toBe(true);
+  });
+
+  it("can be paused with RODIUMAI_ENABLED=false", () => {
+    process.env.RODIUMAI_API_KEY = "rd_sk_example";
+    process.env.RODIUMAI_ENABLED = "false";
+    expect(isRodiumEnabled()).toBe(false);
+    expect(isRodiumConfigured()).toBe(false);
     delete process.env.RODIUMAI_API_KEY;
+    delete process.env.RODIUMAI_ENABLED;
     expect(isRodiumConfigured()).toBe(false);
   });
 });
