@@ -1,3 +1,4 @@
+import { isRodiumConfigured } from "@/lib/env";
 import { parseJobCategory } from "@/lib/job-categories";
 import { parseContractType, parseRemoteType, parseSeniority, parseSkillList } from "@/lib/normalize";
 import { rodiumExtractSchema } from "@/server/ai-schema";
@@ -45,7 +46,7 @@ function heuristicExtract(raw: string): JobInput {
 
 export async function extractJobFromText(raw: string): Promise<JobInput> {
   const fallback = heuristicExtract(raw);
-  if (!process.env.RODIUMAI_API_KEY?.trim()) return fallback;
+  if (!isRodiumConfigured()) return fallback;
   try {
     const result = await rodiumChatJson({
       system: SYSTEM,

@@ -8,6 +8,8 @@ import {
   isClerkProduction,
   isEmailConfigured,
   isLocalhostOrigin,
+  isRodiumConfigured,
+  isRodiumEnabled,
   isVercelAppHost,
   parseEmailFrom,
   PRODUCTION_APP_URL,
@@ -24,6 +26,8 @@ const ORIGINAL = {
   vercel: process.env.VERCEL,
   vercelUrl: process.env.VERCEL_URL,
   vercelProduction: process.env.VERCEL_PROJECT_PRODUCTION_URL,
+  rodiumKey: process.env.RODIUMAI_API_KEY,
+  rodiumEnabled: process.env.RODIUMAI_ENABLED,
 };
 
 afterEach(() => {
@@ -37,6 +41,8 @@ afterEach(() => {
   restore("VERCEL", ORIGINAL.vercel);
   restore("VERCEL_URL", ORIGINAL.vercelUrl);
   restore("VERCEL_PROJECT_PRODUCTION_URL", ORIGINAL.vercelProduction);
+  restore("RODIUMAI_API_KEY", ORIGINAL.rodiumKey);
+  restore("RODIUMAI_ENABLED", ORIGINAL.rodiumEnabled);
 });
 
 function restore(key: string, value: string | undefined) {
@@ -128,6 +134,24 @@ describe("parseEmailFrom", () => {
   it("rejects empty or placeholder senders", () => {
     expect(parseEmailFrom("")).toBeNull();
     expect(parseEmailFrom("JobRadar <noreply@example.com>")).toBeNull();
+  });
+});
+
+describe("isRodiumConfigured", () => {
+  it("stays off by default even when an API key is present", () => {
+    process.env.RODIUMAI_API_KEY = "rd_sk_example";
+    delete process.env.RODIUMAI_ENABLED;
+    expect(isRodiumEnabled()).toBe(false);
+    expect(isRodiumConfigured()).toBe(false);
+  });
+
+  it("turns on only with an explicit enable flag and a key", () => {
+    process.env.RODIUMAI_API_KEY = "rd_sk_example";
+    process.env.RODIUMAI_ENABLED = "true";
+    expect(isRodiumEnabled()).toBe(true);
+    expect(isRodiumConfigured()).toBe(true);
+    delete process.env.RODIUMAI_API_KEY;
+    expect(isRodiumConfigured()).toBe(false);
   });
 });
 

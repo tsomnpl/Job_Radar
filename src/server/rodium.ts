@@ -1,3 +1,5 @@
+import { isRodiumConfigured, rodiumBaseUrl, rodiumModel } from "@/lib/env";
+
 type RodiumMessage = { role: "system" | "user" | "assistant"; content: string };
 
 type RodiumResponse = {
@@ -32,14 +34,12 @@ export async function rodiumChatJson(params: {
   user: string;
   temperature?: number;
 }): Promise<{ json: unknown; model: string; raw: string } | null> {
+  if (!isRodiumConfigured()) return null;
   const apiKey = process.env.RODIUMAI_API_KEY?.trim();
   if (!apiKey) return null;
 
-  const baseUrl = (process.env.RODIUMAI_BASE_URL?.trim() || "https://api.rodiumai.io/v1").replace(
-    /\/$/,
-    "",
-  );
-  const model = process.env.RODIUMAI_MODEL?.trim() || "rodiumai/smart";
+  const baseUrl = rodiumBaseUrl();
+  const model = rodiumModel();
   const messages: RodiumMessage[] = [
     { role: "system", content: params.system },
     { role: "user", content: params.user },

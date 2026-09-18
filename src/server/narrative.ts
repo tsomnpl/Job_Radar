@@ -1,3 +1,4 @@
+import { isRodiumConfigured } from "@/lib/env";
 import { narrativeFromMatch } from "@/lib/matching";
 import type { JobRecord, MatchExplanation } from "@/lib/types";
 import { rodiumNarrativeSchema } from "@/server/ai-schema";
@@ -5,7 +6,7 @@ import { rodiumChatJson } from "@/server/rodium";
 
 export async function explainNarrative(job: JobRecord, match: MatchExplanation): Promise<string> {
   const fallback = narrativeFromMatch(job, match);
-  if (!process.env.RODIUMAI_API_KEY?.trim()) return fallback;
+  if (!isRodiumConfigured()) return fallback;
   try {
     const result = await rodiumChatJson({
       system:

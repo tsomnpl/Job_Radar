@@ -1,3 +1,4 @@
+import { isRodiumConfigured } from "@/lib/env";
 import { parseIntentFromJson, parseIntentHeuristic } from "@/lib/intent";
 import { rodiumIntentSchema } from "@/server/ai-schema";
 import type { SearchIntent } from "@/lib/types";
@@ -19,7 +20,7 @@ Ne invente pas de ville absente de la requête. Si un champ est inconnu, mets nu
 
 export async function resolveIntent(query: string): Promise<SearchIntent> {
   const fallback = parseIntentHeuristic(query);
-  if (!process.env.RODIUMAI_API_KEY?.trim()) return fallback;
+  if (!isRodiumConfigured()) return fallback;
   try {
     const result = await rodiumChatJson({
       system: SYSTEM,

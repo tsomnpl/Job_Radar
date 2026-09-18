@@ -1,9 +1,10 @@
+import { isRodiumConfigured } from "@/lib/env";
 import { rodiumChatJson } from "@/server/rodium";
 import type { JobRecord, ParsedCv } from "@/lib/types";
 
 export async function draftCoverLetter(job: JobRecord, profile: ParsedCv | { headline?: string | null; summary?: string; skills?: string[] }): Promise<string> {
   const fallback = `Madame, Monsieur,\n\nJe vous écris au sujet du poste de ${job.title} chez ${job.company}. Mon profil (${profile.headline ?? "en construction"}) et mes compétences (${(profile.skills ?? []).slice(0, 8).join(", ") || "à préciser"}) s'alignent avec cette opportunité.\n\nJe serais heureux d'échanger sur la manière dont je peux contribuer.\n\nCordialement`;
-  if (!process.env.RODIUMAI_API_KEY?.trim()) return fallback;
+  if (!isRodiumConfigured()) return fallback;
   try {
     const result = await rodiumChatJson({
       system:
@@ -23,7 +24,7 @@ export async function draftCoverLetter(job: JobRecord, profile: ParsedCv | { hea
 export async function optimizeCvHints(cvText: string, target?: string): Promise<string> {
   const fallback =
     "Clarifiez un headline en une ligne, groupez les compétences par domaine, et ajoutez 2 résultats chiffrés par expérience récente.";
-  if (!process.env.RODIUMAI_API_KEY?.trim()) return fallback;
+  if (!isRodiumConfigured()) return fallback;
   try {
     const result = await rodiumChatJson({
       system:

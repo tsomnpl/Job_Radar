@@ -1,4 +1,5 @@
 import { parseCvFromJson, parseCvHeuristic } from "@/lib/cv";
+import { isRodiumConfigured } from "@/lib/env";
 import type { ParsedCv } from "@/lib/types";
 import { rodiumChatJson } from "@/server/rodium";
 
@@ -19,7 +20,7 @@ Ne fabrique pas d'expériences absentes du texte.`;
 
 export async function parseCv(cvText: string): Promise<ParsedCv> {
   const fallback = parseCvHeuristic(cvText);
-  if (!process.env.RODIUMAI_API_KEY?.trim()) return fallback;
+  if (!isRodiumConfigured()) return fallback;
   try {
     const result = await rodiumChatJson({
       system: SYSTEM,
